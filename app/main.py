@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.monitor import get_full_metrics, get_system_metrics, get_docker_metrics
+from app.monitor import get_full_metrics, get_system_metrics, get_docker_metrics, get_docker_client
 
 # Configuración de logs
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -153,6 +153,54 @@ async def api_system():
 async def api_docker():
     """Métricas de Docker y lista de contenedores."""
     return await asyncio.to_thread(get_docker_metrics)
+
+
+@app.get("/api/containers/{container_id}/logs")
+async def api_container_logs(container_id: str, tail: int = 120):
+    """Obtiene los últimos logs de un contenedor."""
+    client = get_docker_client()
+    if not client:
+        return {"logs": f"[DEMO MODO] Registros en tiempo real para el contenedor '{container_id}':\n[2026-09-12T05:20:00Z] Worker initialized successfully.\n[2026-09-12T05:20:01Z] Listening on 0.0.0.0.\n[2026-09-12T05:20:05Z] Heartbeat check: OK (latency 0.8ms).\n[2026-09-12T05:21:00Z] Servicing incoming requests. No anomalies detected."}
+    try:
+        container = client.containers.get(container_id)
+        raw_logs = container.logs(tail=tail, timestamps=True)
+        return {"logs": raw_logs.decode("utf-8", errors="replace")}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Error al leer logs: {str(e)}"})
+
+
+@app.post("/api/containers/{container_id}/restart")
+async def api_container_restart(container_id: str):
+    """Reinicia un contenedor específico."""
+    client = get_docker_client()
+    if not client:
+        return {"success": True, "message": f"[DEMO] Contenedor {container_id} reiniciado correctamente (simulado)"}
+    try:
+        container = client.containers.get(container_id)
+        container.restart(timeout=10)
+        return {"success": True, "message": f"Contenedor '{container.name}' reiniciado exitosamente"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Fallo al reiniciar: {str(e)}"})
+
+
+@app.post("/api/containers/restart-all")
+async def api_restart_all_containers():
+    """Reinicia todos los contenedores en ejecución."""
+    client = get_docker_client()
+    if not client:
+        return {"success": True, "message": "[DEMO] Todos los contenedores reiniciados en segundo plano."}
+    try:
+        containers = client.containers.list()
+        restarted = []
+        for c in containers:
+            try:
+                c.restart(timeout=5)
+                restarted.append(c.name)
+            except Exception:
+                pass
+        return {"success": True, "restarted": restarted, "count": len(restarted)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 def get_current_commit() -> str:

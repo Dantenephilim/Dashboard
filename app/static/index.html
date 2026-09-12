@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Server & Docker Monitor</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='14' x='2' y='3' rx='2'/><line x1='8' x2='16' y1='21' y2='21'/><line x1='12' x2='12' y1='17' y2='21'/></svg>">
+  <title>UBUNTU SERVER PRO | GLOBAL OPERATIONAL VIEW v2.0</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='14' x='2' y='3' rx='2'/><line x1='8' x2='16' y1='21' y2='21'/><line x1='12' x2='12' y1='17' y2='21'/></svg>">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -13,13 +14,17 @@
       theme: {
         extend: {
           colors: {
-            zinc: {
-              950: '#09090b',
-              900: '#121215',
-              850: '#18181b',
-              800: '#27272a',
-              700: '#3f3f46',
+            noc: {
+              bg: '#080c14',
+              panel: '#0d131f',
+              border: '#1b273d',
+              accent: '#06b6d4',
+              glow: '#00f2fe'
             }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
           }
         }
       }
@@ -27,1156 +32,1280 @@
   </script>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #09090b; }
-    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
-    @keyframes pulse-slow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.95); }
+  <style>
+    /* NOC Cyber Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #080c14; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #0ea5e9; }
+
+    /* Metallic Header Border */
+    .metallic-badge {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.5);
     }
-    .animate-pulse-slow {
-      animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+    /* Glow Panel Card */
+    .noc-card {
+      background: rgba(13, 19, 31, 0.92);
+      border: 1px solid rgba(30, 41, 59, 0.85);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), 0 0 12px -2px rgba(6, 182, 212, 0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Pulse animation */
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+    .pulse-dot {
+      animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Core Heatmap Gradient */
+    .core-heat-bar {
+      background: linear-gradient(90deg, #10b981 0%, #3b82f6 30%, #eab308 65%, #ef4444 100%);
+    }
+
+    /* Neon Border Glow on hover */
+    .glow-hover:hover {
+      border-color: rgba(6, 182, 212, 0.5);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
     }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-400">
+<body class="bg-[#080c14] text-slate-200 min-h-screen font-sans antialiased text-xs select-none selection:bg-cyan-500/30 selection:text-cyan-300">
 
-  <!-- Header / Navbar -->
-  <header class="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md px-4 sm:px-6 py-3.5 transition-all">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <!-- Title & Host Info -->
-      <div class="flex items-center gap-3">
-        <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <svg class="w-5 h-5 text-zinc-950" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/>
-            <line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>
-          </svg>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="font-semibold tracking-tight text-white text-base">Server & Docker Live Monitor</h1>
-            <span id="badge-hostname" class="text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-mono border border-zinc-700/60">localhost</span>
-          </div>
-          <p id="system-os-uptime" class="text-xs text-zinc-400">Detectando sistema...</p>
-        </div>
-      </div>
-
-      <!-- Controls & Live Badge -->
-      <div class="flex items-center gap-3 self-end sm:self-auto">
-        <!-- Live Connection Status -->
-        <div id="ws-status" class="flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800">
-          <span id="ws-indicator" class="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-          <span id="ws-text" class="text-zinc-400">Conectando...</span>
-        </div>
-
-        <!-- Updates System Button -->
-        <button id="btn-updates" title="Estado de actualizaciones del sistema" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 hover:bg-zinc-850 text-zinc-300 border border-zinc-800 transition">
-          <span id="update-dot" class="h-2 w-2 rounded-full bg-emerald-400"></span>
-          <span id="update-text" class="font-mono text-[11px]">v1.1.0</span>
-        </button>
-
-        <!-- Clock / Last Update -->
-        <div class="text-xs text-zinc-500 font-mono hidden md:block">
-          Actualizado: <span id="last-update" class="text-zinc-300">--:--:--</span>
-        </div>
-
-        <!-- Manual refresh button -->
-        <button id="btn-refresh" title="Refrescar métricas ahora" class="p-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-    <!-- Docker Warning Banner (visible when Docker socket is unreachable) -->
-    <div id="docker-alert-banner" class="hidden rounded-xl border border-rose-500/30 bg-rose-950/20 p-4 text-rose-200">
-      <div class="flex items-start gap-3">
-        <svg class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
-        <div class="text-sm">
-          <p class="font-semibold text-rose-300" id="docker-alert-title">Docker no disponible</p>
-          <p class="text-zinc-400 mt-1" id="docker-alert-desc">Verifique que el demonio de Docker esté activo y que el socket <code>/var/run/docker.sock</code> esté accesible con permisos de lectura.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Top KPI Cards -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      
-      <!-- CPU KPI -->
-      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Uso de CPU</span>
-          <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-            </svg>
-          </span>
-        </div>
-        <div class="flex items-baseline gap-2">
-          <span id="kpi-cpu-value" class="text-3xl font-bold tracking-tight text-white">0%</span>
-          <span id="kpi-cpu-cores" class="text-xs text-zinc-500">-- Cores</span>
-        </div>
-        <!-- Progress bar -->
-        <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
-          <div id="kpi-cpu-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between items-center text-[11px] text-zinc-400 mt-2 font-mono">
-          <span id="kpi-cpu-load">Load: 0.00, 0.00, 0.00</span>
-          <span id="kpi-cpu-freq">-- MHz</span>
-        </div>
-      </div>
-
-      <!-- RAM KPI -->
-      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Memoria RAM</span>
-          <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-            </svg>
-          </span>
-        </div>
-        <div class="flex items-baseline gap-2">
-          <span id="kpi-ram-value" class="text-3xl font-bold tracking-tight text-white">0%</span>
-          <span id="kpi-ram-detail" class="text-xs text-zinc-500">0 / 0 GB</span>
-        </div>
-        <!-- Progress bar -->
-        <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
-          <div id="kpi-ram-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between items-center text-[11px] text-zinc-400 mt-2 font-mono">
-          <span>Libre: <span id="kpi-ram-free">0 GB</span></span>
-          <span id="kpi-ram-total">Total: 0 GB</span>
-        </div>
-      </div>
-
-      <!-- Disk KPI -->
-      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Disco Raíz (/)</span>
-          <span class="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 4h16M7 16h2"/>
-            </svg>
-          </span>
-        </div>
-        <div class="flex items-baseline gap-2">
-          <span id="kpi-disk-value" class="text-3xl font-bold tracking-tight text-white">0%</span>
-          <span id="kpi-disk-detail" class="text-xs text-zinc-500">0 / 0 GB</span>
-        </div>
-        <!-- Progress bar -->
-        <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
-          <div id="kpi-disk-bar" class="bg-sky-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between items-center text-[11px] text-zinc-400 mt-2 font-mono">
-          <span>Libre: <span id="kpi-disk-free">0 GB</span></span>
-          <span id="kpi-disk-total">Total: 0 GB</span>
-        </div>
-      </div>
-
-      <!-- Containers Overview KPI -->
-      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Docker Containers</span>
-          <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-            </svg>
-          </span>
-        </div>
-        <div class="flex items-baseline gap-2">
-          <span id="kpi-containers-total" class="text-3xl font-bold tracking-tight text-white">0</span>
-          <span class="text-xs text-zinc-500">totales</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-zinc-800/80">
-          <div class="flex items-center gap-1.5">
-            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-slow"></span>
-            <span class="text-xs text-zinc-300 font-medium"><span id="kpi-containers-running">0</span> activos</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-            <span class="text-xs text-zinc-400 font-medium"><span id="kpi-containers-stopped">0</span> parados</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Real-time Charts Section -->
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      
-      <!-- CPU Chart -->
-      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-            <h3 class="text-sm font-semibold text-zinc-200">Historial de CPU (%)</h3>
-          </div>
-          <span class="text-xs text-zinc-500 font-mono">Último minuto</span>
-        </div>
-        <div class="h-44 w-full relative">
-          <canvas id="chart-cpu"></canvas>
-        </div>
-      </div>
-
-      <!-- RAM Chart -->
-      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
-            <h3 class="text-sm font-semibold text-zinc-200">Historial de Memoria RAM (%)</h3>
-          </div>
-          <span class="text-xs text-zinc-500 font-mono">Último minuto</span>
-        </div>
-        <div class="h-44 w-full relative">
-          <canvas id="chart-ram"></canvas>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- Radar de Auto-Escaneo Autónomo de Servicios -->
-    <section class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 backdrop-blur-sm overflow-hidden p-4 sm:p-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-800/80">
-        <div class="flex items-center gap-3">
-          <div class="relative flex h-3.5 w-3.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-sm shadow-emerald-500"></span>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-base font-semibold text-white tracking-tight">Auto-Escáner de Servicios & Puertos</h2>
-              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">100% Autónomo</span>
-            </div>
-            <p class="text-xs text-zinc-400 mt-0.5">Escaneo continuo en segundo plano: detecta contenedores, servicios web y puertos abiertos sin configuración manual.</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-          <span class="text-xs font-mono text-zinc-300 bg-zinc-950 px-3 py-1 rounded-md border border-zinc-800 flex items-center gap-1.5">
-            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="services-online-count" class="text-emerald-400 font-bold">0</span> servicios web detectados
-          </span>
-        </div>
-      </div>
-
-      <!-- Discovered Services Grid -->
-      <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        <!-- Tarjetas dinámicas de servicios -->
-      </div>
-      <div id="services-empty-msg" class="hidden py-8 text-center text-xs text-zinc-500 font-mono">
-        Escaneando servicios activos en el servidor...
-      </div>
-    </section>
-
-    <!-- Docker Containers Table / Grid -->
-    <section class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 backdrop-blur-sm overflow-hidden">
-      <!-- Section Header with Search & Filter -->
-      <div class="p-4 sm:p-5 border-b border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-2.5">
-          <h2 class="text-base font-semibold text-white tracking-tight">Contenedores Docker</h2>
-          <span id="containers-count-badge" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60">0</span>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Filter Tabs -->
-          <div class="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 text-xs">
-            <button data-filter="all" class="filter-tab px-3 py-1 rounded-md font-medium text-white bg-zinc-800 transition">Todos</button>
-            <button data-filter="running" class="filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition">Activos</button>
-            <button data-filter="stopped" class="filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition">Detenidos</button>
-          </div>
-
-          <!-- Category Filter Dropdown -->
-          <select id="category-filter" class="bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500/80 transition font-medium cursor-pointer">
-            <option value="all">Todas las Categorías</option>
-            <option value="security">🛡️ Seguridad / SIEM (Wazuh)</option>
-            <option value="logging">📜 Logs (Graylog)</option>
-            <option value="ai">🧠 IA & Auto (Ollama/n8n/WebUI)</option>
-            <option value="database">🗄️ Bases de Datos (PostgreSQL)</option>
-            <option value="web">🌐 Apps Web (Osiris/Nginx)</option>
-            <option value="mcp">🔌 Servidores MCP</option>
-          </select>
-
-          <!-- Search Input -->
-          <div class="relative min-w-[200px]">
-            <svg class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-            </svg>
-            <input type="text" id="container-search" placeholder="Buscar por nombre, imagen o puerto..." 
-                   class="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-3 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition">
-          </div>
-        </div>
-      </div>
-
-      <!-- Container Items Table -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr class="border-b border-zinc-800/80 bg-zinc-950/40 text-zinc-400 uppercase tracking-wider font-mono text-[11px]">
-              <th class="py-3 px-4">Estado</th>
-              <th class="py-3 px-4">Nombre / ID</th>
-              <th class="py-3 px-4">Imagen</th>
-              <th class="py-3 px-4">Uso CPU</th>
-              <th class="py-3 px-4">Uso RAM</th>
-              <th class="py-3 px-4">Puertos Expuestos</th>
-            </tr>
-          </thead>
-          <tbody id="containers-tbody" class="divide-y divide-zinc-800/60 font-sans">
-            <!-- Dynamic rows will be inserted here -->
-            <tr>
-              <td colspan="6" class="py-8 text-center text-zinc-500">
-                Cargando información de contenedores...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Empty State Message -->
-      <div id="no-containers-msg" class="hidden py-12 text-center text-zinc-500 text-sm">
-        No se encontraron contenedores con el criterio seleccionado.
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Modal del Sistema de Actualizaciones -->
-  <div id="modal-updates" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden transition-opacity">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 m-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="text-base font-semibold text-white tracking-tight">Sistema de Actualizaciones</h3>
-            <p class="text-xs text-zinc-400">Dashboard de Monitoreo Ubuntu</p>
-          </div>
-        </div>
-        <button id="close-modal-updates" class="text-zinc-400 hover:text-white text-xl p-1 leading-none">&times;</button>
-      </div>
-
-      <div class="bg-zinc-950 rounded-xl p-4 border border-zinc-800 space-y-3 font-mono text-xs">
-        <div class="flex justify-between items-center">
-          <span class="text-zinc-500 font-sans">Versión en ejecución:</span>
-          <span id="modal-curr-version" class="text-zinc-200 font-bold">v1.1.0</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-zinc-500 font-sans">Último commit GitHub:</span>
-          <span id="modal-latest-commit" class="text-emerald-400 font-bold">Comprobando...</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-zinc-500 font-sans">Estado:</span>
-          <span id="modal-status-badge" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[11px] font-sans">Al día</span>
-        </div>
-        <p id="modal-latest-msg" class="text-[11px] text-zinc-400 font-sans border-t border-zinc-900 pt-2"></p>
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-xs font-medium text-zinc-300">Para actualizar tu servidor ejecuta:</label>
-        <div class="flex items-center justify-between bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
-          <code id="update-cmd-text" class="text-xs text-emerald-400 font-mono select-all">sudo bash update.sh</code>
-          <button id="btn-copy-update-cmd" class="text-xs text-zinc-400 hover:text-white px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 transition border border-zinc-700/60">
-            Copiar
-          </button>
-        </div>
-      </div>
-
-      <div class="pt-2">
-        <button id="btn-check-updates-now" class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>Comprobar actualizaciones en GitHub</span>
-        </button>
-      </div>
-    </div>
+  <!-- Ambient background lighting -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
   </div>
 
-  <!-- Footer -->
-  <footer class="max-w-7xl mx-auto px-4 sm:px-6 py-6 border-t border-zinc-900 text-center text-xs text-zinc-600">
-    Dashboard de Monitoreo Ligero &bull; FastAPI + WebSockets + Tailwind &bull; Actualización continua
-  </footer>
+  <div class="relative z-10 flex flex-col min-h-screen p-2 md:p-3 gap-2">
 
-  <!-- Application Logic -->
+    <!-- ========================================================================= -->
+    <!-- TOP GLOBAL HEADER (NOC STYLE)                                            -->
+    <!-- ========================================================================= -->
+    <header class="flex flex-col md:flex-row items-center justify-between gap-2 px-3 py-2 bg-[#0c121e]/90 border border-slate-800/80 rounded-lg shadow-lg">
+      
+      <!-- Left: Metallic Title Badge -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="metallic-badge px-3 py-1.5 rounded-md flex items-center gap-2">
+          <span class="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] pulse-dot"></span>
+          <h1 class="text-xs md:text-sm font-bold tracking-wider text-slate-100 uppercase font-mono">
+            UBUNTU SERVER PRO | GLOBAL OPERATIONAL VIEW <span class="text-cyan-400">v2.0</span>
+          </h1>
+        </div>
+
+        <div class="hidden lg:flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+          <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300" id="header-host-badge">nexotech-srv01</span>
+          <span id="header-os-badge">Ubuntu Linux</span>
+        </div>
+      </div>
+
+      <!-- Right: ALERTS & Quick Actions -->
+      <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+        <span class="text-[11px] font-bold tracking-wider text-slate-400 font-mono mr-1">ALERTS</span>
+        
+        <!-- Critical Alert Badge Button -->
+        <button id="btn-alert-critical" onclick="openAlertModal('critical')" class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-950/80 border border-rose-500/80 text-rose-300 font-mono font-semibold hover:bg-rose-900/90 transition shadow-[0_0_10px_rgba(244,63,94,0.2)]">
+          <span class="h-1.5 w-1.5 rounded-full bg-rose-400 animate-ping"></span>
+          <span id="count-critical">0</span> Critical
+        </button>
+
+        <!-- Warning Alert Badge Button -->
+        <button id="btn-alert-warning" onclick="openAlertModal('warning')" class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/80 border border-amber-500/80 text-amber-300 font-mono font-semibold hover:bg-amber-900/90 transition shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+          <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+          <span id="count-warning">0</span> Warning
+        </button>
+
+        <!-- Bell Icon Button -->
+        <button onclick="openAlertModal('all')" title="Ver todas las alertas" class="relative p-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-400 hover:border-cyan-500 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span id="badge-bell" class="hidden absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center">0</span>
+        </button>
+
+        <!-- Updates / Sync Button -->
+        <button onclick="openUpdateModal()" title="Comprobar actualizaciones en GitHub" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 font-mono text-[11px] transition">
+          <span id="update-indicator" class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+          <span id="btn-update-label">v2.0 Sync</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- MAIN 2-COLUMN VIEW (GLANCES / SYSTEM vs DOZZLE / CONTAINERS)               -->
+    <!-- ========================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1">
+
+      <!-- ======================================================================= -->
+      <!-- LEFT COLUMN: GLANCES | SYSTEM MONITORING (6 COLS)                       -->
+      <!-- ======================================================================= -->
+      <section class="lg:col-span-6 xl:col-span-6 noc-card rounded-lg p-3 flex flex-col gap-3">
+        
+        <!-- Section Header -->
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-cyan-400 font-bold font-mono text-xs tracking-wider">GLANCES</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-slate-200 font-bold text-xs tracking-wide">SYSTEM MONITORING</span>
+          </div>
+          <button onclick="openServiceMapModal()" class="px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900/80 transition flex items-center gap-1">
+            <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            SERVICE MAP
+          </button>
+        </div>
+
+        <!-- 1. CPU USAGE (HEATMAP PER CORE + AGGREGATE SPEEDOMETER GAUGE) -->
+        <div class="bg-[#090e17]/90 border border-slate-800/90 rounded-lg p-2.5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-mono font-bold text-[11px] text-slate-300 tracking-wider">CPU USAGE</span>
+            <span id="cpu-core-summary" class="font-mono text-[10px] text-slate-400">8 Logical Cores • 3200 MHz</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+            
+            <!-- Left: Per-Core Heatmap Bars (7 cols) -->
+            <div id="cores-container" class="sm:col-span-7 flex flex-col gap-1 pr-1 max-h-48 overflow-y-auto">
+              <!-- Dynamically populated per core -->
+              <div class="text-slate-500 text-[10px] py-2 text-center">Cargando núcleos...</div>
+            </div>
+
+            <!-- Right: Circular Aggregate Speedometer Gauge (5 cols) -->
+            <div class="sm:col-span-5 flex flex-col items-center justify-center p-1 border-t sm:border-t-0 sm:border-l border-slate-800/80">
+              <span class="text-[10px] font-mono tracking-widest text-slate-400 uppercase font-semibold mb-1">AGGREGATE</span>
+              
+              <div class="relative w-28 h-28 flex items-center justify-center">
+                <!-- SVG Radial Meter -->
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <!-- Background Track -->
+                  <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="transparent" />
+                  <!-- Glowing Value Track -->
+                  <circle id="radial-cpu-circle" cx="50" cy="50" r="40" stroke="#06b6d4" stroke-width="8" stroke-linecap="round"
+                          stroke-dasharray="251.2" stroke-dashoffset="150" fill="transparent"
+                          class="transition-all duration-700" />
+                </svg>
+
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span id="radial-cpu-val" class="font-mono text-lg font-extrabold text-white tracking-tight">0.0%</span>
+                  <span class="text-[9px] font-mono text-cyan-400 uppercase font-bold">TOTAL CPU</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 2. SYSTEM KPIS & REAL-TIME GRAPHS SPLIT -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-2 flex-1">
+          
+          <!-- Sub-column Left: Stats List (5 cols) -->
+          <div class="md:col-span-5 flex flex-col gap-2">
+            
+            <!-- MEMORY BLOCK -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">MEMORY</span>
+                <span id="kpi-ram-pct" class="font-mono font-bold text-emerald-400 text-[11px]">0.0%</span>
+              </div>
+              <div class="flex flex-col gap-1 font-mono text-[11px]">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Used</span>
+                  <span id="kpi-ram-used" class="text-emerald-400 font-semibold">0.0 MB</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Cached</span>
+                  <span id="kpi-ram-cached" class="text-teal-400">0.0 MB</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Free</span>
+                  <span id="kpi-ram-free" class="text-cyan-400">0.0 MB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- LOAD BLOCK -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2">
+              <span class="font-mono font-bold text-[10px] text-slate-400 uppercase block mb-1">LOAD AVERAGE</span>
+              <div class="grid grid-cols-3 gap-1 font-mono text-center">
+                <div class="bg-slate-900/80 rounded p-1 border border-slate-800">
+                  <div class="text-[9px] text-slate-500">1 min</div>
+                  <div id="load-1" class="text-amber-400 font-bold text-[11px]">0.00</div>
+                </div>
+                <div class="bg-slate-900/80 rounded p-1 border border-slate-800">
+                  <div class="text-[9px] text-slate-500">5 min</div>
+                  <div id="load-5" class="text-amber-300 font-bold text-[11px]">0.00</div>
+                </div>
+                <div class="bg-slate-900/80 rounded p-1 border border-slate-800">
+                  <div class="text-[9px] text-slate-500">15 min</div>
+                  <div id="load-15" class="text-slate-300 font-bold text-[11px]">0.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DISK I/O BLOCK -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">DISK I/O</span>
+                <span id="kpi-disk-pct" class="font-mono text-cyan-400 text-[10px]">0% used</span>
+              </div>
+              <div class="flex flex-col gap-1 font-mono text-[11px]">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Read</span>
+                  <span id="disk-read-rate" class="text-cyan-400 font-semibold">0.0 KB/s</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Write</span>
+                  <span id="disk-write-rate" class="text-orange-400 font-semibold">0.0 KB/s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- NETWORK TRAFFIC (WITH WORLD MAP BACKGROUND) -->
+            <div class="relative bg-[#090e17]/90 border border-slate-800/80 rounded-md p-2 overflow-hidden">
+              <!-- World Map SVG Silhouette Backdrop -->
+              <svg class="absolute inset-0 w-full h-full opacity-15 pointer-events-none" viewBox="0 0 1000 500" fill="#06b6d4">
+                <path d="M150,120 Q180,80 230,110 T300,160 Q270,240 220,260 T140,200 Z" />
+                <path d="M250,280 Q320,290 350,380 T290,470 Q240,430 220,350 Z" />
+                <path d="M480,90 Q540,60 620,100 T680,180 Q600,240 520,200 Z" />
+                <path d="M520,220 Q600,240 610,340 T540,410 Q490,360 480,270 Z" />
+                <path d="M680,100 Q800,80 920,130 T880,260 Q750,230 680,150 Z" />
+                <path d="M780,310 Q850,310 880,380 T800,430 Q740,400 760,340 Z" />
+              </svg>
+
+              <div class="relative z-10 flex items-center justify-between mb-1">
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">NETWORK TRAFFIC</span>
+                <span class="h-2 w-2 rounded-full bg-emerald-400 pulse-dot"></span>
+              </div>
+
+              <div class="relative z-10 flex flex-col gap-1 font-mono text-[11px]">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Inbound</span>
+                  <span id="net-in-rate" class="text-emerald-400 font-semibold">↓ 0.0 KB/s</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Outbound</span>
+                  <span id="net-out-rate" class="text-cyan-400 font-semibold">↑ 0.0 KB/s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SYSTEM INFO MINIMAL -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2 font-mono text-[10px] text-slate-400 flex flex-col gap-1">
+              <div class="flex justify-between">
+                <span>OS</span>
+                <span id="kpi-sys-os" class="text-slate-200 truncate max-w-[140px]">Linux</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Uptime</span>
+                <span id="kpi-sys-uptime" class="text-slate-200">0h 0m</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Hostname</span>
+                <span id="kpi-sys-hostname" class="text-cyan-400 truncate max-w-[140px]">localhost</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Sub-column Right: Graphs (7 cols) -->
+          <div class="md:col-span-7 flex flex-col gap-2">
+            
+            <!-- CPU USAGE TIMELINE CHART -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2 flex flex-col">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">CPU USAGE (Historial)</span>
+                <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/40">60s Live</span>
+              </div>
+              <div class="h-24 w-full">
+                <canvas id="chart-cpu-timeline"></canvas>
+              </div>
+            </div>
+
+            <!-- DISK I/O SPIKE GRAPH -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2 flex flex-col">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">DISK I/O RATE (KB/s)</span>
+                <span id="disk-spike-label" class="text-[9px] font-mono text-amber-400">Activity Peak</span>
+              </div>
+              <div class="h-20 w-full">
+                <canvas id="chart-disk-io"></canvas>
+              </div>
+            </div>
+
+            <!-- NETWORK BANDWIDTH GRAPH -->
+            <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2 flex flex-col">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">NETWORK TRAFFIC (In / Out)</span>
+                <span class="text-[9px] font-mono text-emerald-400">KB/s</span>
+              </div>
+              <div class="h-20 w-full">
+                <canvas id="chart-net-io"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================================= -->
+      <!-- RIGHT COLUMN: DOZZLE | CONTAINER MONITORING (6 COLS)                    -->
+      <!-- ======================================================================= -->
+      <section class="lg:col-span-6 xl:col-span-6 noc-card rounded-lg p-3 flex flex-col gap-2.5">
+        
+        <!-- Section Header with Actions -->
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-cyan-400 font-bold font-mono text-xs tracking-wider">DOZZLE</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-slate-200 font-bold text-xs tracking-wide">CONTAINER MONITORING</span>
+            <span id="container-count-badge" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">0 Running</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="restartAllContainers()" title="Reiniciar todos los contenedores en ejecución" class="px-2 py-1 rounded text-[11px] font-mono font-semibold bg-slate-900 border border-slate-700 hover:border-amber-500 hover:text-amber-300 text-slate-300 transition flex items-center gap-1">
+              <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Restart All
+            </button>
+            <button onclick="openUpdateModal()" title="Instalar o actualizar servicios" class="px-2 py-1 rounded text-[11px] font-mono font-semibold bg-cyan-950/80 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 transition flex items-center gap-1">
+              <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              Deploy / Updates
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter / Search Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-[#090e17]/80 border border-slate-800/80 rounded p-1.5">
+          
+          <!-- Search input -->
+          <div class="relative flex-1 min-w-[180px]">
+            <input type="text" id="search-container" placeholder="Buscar por nombre, imagen o puerto..." 
+                   class="w-full bg-slate-900/90 border border-slate-700/80 rounded px-2.5 py-1 text-slate-200 placeholder-slate-500 text-[11px] font-mono focus:outline-none focus:border-cyan-500 transition">
+            <svg class="w-3.5 h-3.5 absolute right-2.5 top-2 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+
+          <!-- Category / Status Filters -->
+          <div class="flex items-center gap-1 font-mono text-[10px]">
+            <button onclick="setFilter('all')" class="filter-btn active px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40" data-filter="all">Todos</button>
+            <button onclick="setFilter('running')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="running">Activos</button>
+            <button onclick="setFilter('alert')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Con Alertas</button>
+          </div>
+        </div>
+
+        <!-- Table Column Headers (Dozzle Style) -->
+        <div class="grid grid-cols-12 gap-2 px-2 py-1 bg-slate-900/90 border border-slate-800/80 rounded text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+          <div class="col-span-5 flex items-center gap-1">NAME ▲</div>
+          <div class="col-span-2 text-center">STATUS ⬍</div>
+          <div class="col-span-2 text-center">PORTS ⧉</div>
+          <div class="col-span-3 text-right">METRICS & LOGS</div>
+        </div>
+
+        <!-- Demo Mode Notice (if applicable) -->
+        <div id="demo-banner" class="hidden rounded border border-amber-500/40 bg-amber-950/20 px-2.5 py-1.5 text-amber-200 text-[11px] flex items-center justify-between">
+          <span>💡 <b>Modo Vista Previa:</b> Mostrando contenedores y servicios del entorno de producción.</span>
+          <span class="text-[10px] font-mono text-amber-400 underline cursor-pointer" onclick="openUpdateModal()">Verificar Docker</span>
+        </div>
+
+        <!-- Containers List (Scrollable) -->
+        <div id="containers-list" class="flex flex-col gap-1.5 overflow-y-auto max-h-[460px] pr-1">
+          <!-- Dynamically filled with container rows -->
+          <div class="text-center py-8 text-slate-500 font-mono">Escaneando contenedores...</div>
+        </div>
+
+        <!-- Bottom Host Hardware & Storage Summary (Matching Reference Photo) -->
+        <div class="mt-auto pt-2 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 bg-[#090e17]/60 p-2 rounded">
+          <div class="flex flex-col gap-0.5">
+            <div>Kernel: <span id="footer-kernel" class="text-slate-200">Linux 6.8.0-generic</span></div>
+            <div>Host Info: <span id="footer-hostinfo" class="text-slate-200">Ubuntu 24.04 LTS (x86_64)</span></div>
+            <div>Last Audit: <span id="footer-audit" class="text-slate-300">--:--:-- UTC</span></div>
+          </div>
+          <div class="flex flex-col gap-0.5 sm:text-right">
+            <div class="text-slate-300 font-bold">DISK STORAGE</div>
+            <div>Mount Point (/): <span id="footer-disk-used" class="text-cyan-400 font-bold">0.0 GB</span> / <span id="footer-disk-total" class="text-slate-300">0.0 GB</span></div>
+            <div>Disponibles: <span id="footer-disk-free" class="text-emerald-400 font-bold">0.0 GB</span></div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- BOTTOM FOOTER STATUS BAR                                                  -->
+    <!-- ========================================================================= -->
+    <footer class="flex items-center justify-between px-3 py-1.5 bg-[#0c121e]/90 border border-slate-800/80 rounded-lg text-[11px] font-mono text-slate-400">
+      <div class="flex items-center gap-2">
+        <span id="footer-conn-dot" class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] pulse-dot"></span>
+        <span>Conectado a <span id="footer-hostname" class="text-slate-200 font-semibold">ubuntu-server-pro</span> vía WebSocket</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="hidden sm:inline text-slate-500">Latencia: &lt;5ms</span>
+        <div class="flex items-center gap-1 cursor-pointer hover:text-cyan-400 transition" onclick="triggerManualRefresh()" title="Refrescar ahora">
+          <span>Refresh: 2s</span>
+          <svg id="refresh-icon" class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ALERTAS CRÍTICAS Y ADVERTENCIAS                                     -->
+  <!-- ========================================================================= -->
+  <dialog id="modal-alerts" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/70 max-w-xl w-full">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
+      <div class="flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+        <h3 class="font-mono font-bold text-sm text-slate-100">CENTRO DE ALERTAS OPERACIONALES</h3>
+      </div>
+      <button onclick="closeModal('modal-alerts')" class="text-slate-400 hover:text-white p-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div class="p-4 max-h-96 overflow-y-auto flex flex-col gap-2" id="alerts-modal-content">
+      <!-- Alerts populated via JS -->
+      <div class="text-slate-500 text-center py-6">No hay alertas activas en este momento.</div>
+    </div>
+
+    <div class="flex items-center justify-between px-4 py-2.5 border-t border-slate-800 bg-slate-900/50 text-xs font-mono">
+      <span class="text-slate-400">Inspección automática en tiempo real</span>
+      <button onclick="closeModal('modal-alerts')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: LOGS EN TIEMPO REAL DEL CONTENEDOR (DOZZLE EXPERIENCE)             -->
+  <!-- ========================================================================= -->
+  <dialog id="modal-logs" class="rounded-xl bg-[#090e17] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/80 max-w-3xl w-full">
+    <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-800 bg-slate-900/90">
+      <div class="flex items-center gap-2">
+        <span class="text-cyan-400 font-mono font-bold text-xs">LOGS:</span>
+        <span id="modal-logs-title" class="font-mono font-bold text-xs text-white">container-name</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="refreshCurrentLogs()" title="Recargar logs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+        <button onclick="copyCurrentLogs()" title="Copiar logs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
+        <button onclick="closeModal('modal-logs')" class="text-slate-400 hover:text-white p-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    
+    <div class="p-3 bg-black/90 font-mono text-[11px] text-slate-300 max-h-[420px] overflow-y-auto whitespace-pre-wrap selection:bg-cyan-600/40" id="modal-logs-body">
+      Cargando registros...
+    </div>
+
+    <div class="flex items-center justify-between px-4 py-2 border-t border-slate-800 bg-slate-900/50 text-xs font-mono">
+      <span class="text-slate-500">Últimas 120 líneas • Salida estándar</span>
+      <button onclick="closeModal('modal-logs')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SERVICE MAP / APLICACIONES DETECTADAS                              -->
+  <!-- ========================================================================= -->
+  <dialog id="modal-services" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/75 max-w-2xl w-full">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
+      <div class="flex items-center gap-2">
+        <span class="text-cyan-400">🌐</span>
+        <h3 class="font-mono font-bold text-sm text-slate-100">MAPA DE SERVICIOS Y ACCESO RÁPIDO</h3>
+      </div>
+      <button onclick="closeModal('modal-services')" class="text-slate-400 hover:text-white p-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div class="p-4 max-h-[400px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2" id="service-map-grid">
+      <!-- Populated via JS -->
+      <div class="text-slate-500 text-center py-6 col-span-2 font-mono">Escaneando servicios de red...</div>
+    </div>
+
+    <div class="flex items-center justify-between px-4 py-2.5 border-t border-slate-800 bg-slate-900/50 text-xs font-mono">
+      <span class="text-slate-400">Haz clic en cualquier puerto para abrirlo en una nueva pestaña</span>
+      <button onclick="closeModal('modal-services')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ACTUALIZACIONES Y ESTADO DE GITHUB                                 -->
+  <!-- ========================================================================= -->
+  <dialog id="modal-updates" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/75 max-w-md w-full">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-cyan-400 pulse-dot"></span>
+        <h3 class="font-mono font-bold text-sm text-slate-100">SISTEMA DE ACTUALIZACIONES</h3>
+      </div>
+      <button onclick="closeModal('modal-updates')" class="text-slate-400 hover:text-white p-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div class="p-4 flex flex-col gap-3 font-mono text-xs">
+      <div class="bg-slate-900/90 border border-slate-800 rounded p-3 flex flex-col gap-1.5">
+        <div class="flex justify-between">
+          <span class="text-slate-400">Versión Local:</span>
+          <span id="update-modal-local" class="text-slate-200 font-bold">Cargando...</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Último Commit Remoto:</span>
+          <span id="update-modal-remote" class="text-cyan-400 font-bold">Comprobando...</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Estado:</span>
+          <span id="update-modal-status" class="text-emerald-400 font-bold">Verificando...</span>
+        </div>
+      </div>
+
+      <div class="text-[11px] text-slate-300">
+        Para aplicar la última versión en tu servidor Ubuntu Server, ejecuta:
+      </div>
+
+      <div class="bg-black/80 border border-slate-700/80 rounded p-2.5 flex items-center justify-between">
+        <code id="cmd-update" class="text-emerald-400 select-all font-mono text-[11px]">cd ~/Dashboard && git pull && sudo bash install.sh</code>
+        <button onclick="copyUpdateCommand()" title="Copiar comando" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end px-4 py-2.5 border-t border-slate-800 bg-slate-900/50 text-xs">
+      <button onclick="closeModal('modal-updates')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono transition">Entendido</button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC (WEBSOCKET, CHARTS, DOZZLE TABLE, GLANCES GAUGES)        -->
+  <!-- ========================================================================= -->
   <script>
-    // State management
-    let fullState = {
-      system: null,
-      docker: { available: false, containers: [] }
-    };
+    // State
+    let currentMetrics = null;
+    let currentAlerts = { critical_count: 0, warning_count: 0, items: [] };
     let currentFilter = 'all';
-    let currentCategory = 'all';
-    let searchQuery = '';
-    let cpuChart = null;
-    let ramChart = null;
+    let currentLogsContainerId = null;
     let ws = null;
-    let reconnectTimer = null;
-    let pollingFallbackTimer = null;
+    let wsReconnectTimeout = null;
 
-    // DOM Elements
-    const elHostname = document.getElementById('badge-hostname');
-    const elOsUptime = document.getElementById('system-os-uptime');
-    const elWsStatus = document.getElementById('ws-status');
-    const elWsIndicator = document.getElementById('ws-indicator');
-    const elWsText = document.getElementById('ws-text');
-    const elLastUpdate = document.getElementById('last-update');
-    const elDockerBanner = document.getElementById('docker-alert-banner');
-    const elDockerAlertDesc = document.getElementById('docker-alert-desc');
+    // Chart instances
+    let chartCpuTimeline = null;
+    let chartDiskIo = null;
+    let chartNetIo = null;
 
-    // KPI Elements
-    const elKpiCpuValue = document.getElementById('kpi-cpu-value');
-    const elKpiCpuCores = document.getElementById('kpi-cpu-cores');
-    const elKpiCpuBar = document.getElementById('kpi-cpu-bar');
-    const elKpiCpuLoad = document.getElementById('kpi-cpu-load');
-    const elKpiCpuFreq = document.getElementById('kpi-cpu-freq');
+    // Maximum history points
+    const MAX_CHART_POINTS = 30;
 
-    const elKpiRamValue = document.getElementById('kpi-ram-value');
-    const elKpiRamDetail = document.getElementById('kpi-ram-detail');
-    const elKpiRamBar = document.getElementById('kpi-ram-bar');
-    const elKpiRamFree = document.getElementById('kpi-ram-free');
-    const elKpiRamTotal = document.getElementById('kpi-ram-total');
+    // Helper: Modal management
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el && typeof el.showModal === 'function') el.showModal();
+    }
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el && typeof el.close === 'function') el.close();
+    }
 
-    const elKpiDiskValue = document.getElementById('kpi-disk-value');
-    const elKpiDiskDetail = document.getElementById('kpi-disk-detail');
-    const elKpiDiskBar = document.getElementById('kpi-disk-bar');
-    const elKpiDiskFree = document.getElementById('kpi-disk-free');
-    const elKpiDiskTotal = document.getElementById('kpi-disk-total');
-
-    const elKpiContainersTotal = document.getElementById('kpi-containers-total');
-    const elKpiContainersRunning = document.getElementById('kpi-containers-running');
-    const elKpiContainersStopped = document.getElementById('kpi-containers-stopped');
-    const elContainersCountBadge = document.getElementById('containers-count-badge');
-    const elContainersTbody = document.getElementById('containers-tbody');
-    const elNoContainersMsg = document.getElementById('no-containers-msg');
+    // Modal helpers
+    function openAlertModal(filter) {
+      renderAlertsModal(filter);
+      openModal('modal-alerts');
+    }
+    function openServiceMapModal() {
+      renderServiceMapModal();
+      openModal('modal-services');
+    }
+    function openUpdateModal() {
+      checkUpdates();
+      openModal('modal-updates');
+    }
 
     // Initialize Charts
     function initCharts() {
-      const commonOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 0 },
-        scales: {
-          x: {
-            grid: { color: 'rgba(255, 255, 255, 0.04)' },
-            ticks: { color: '#71717a', font: { size: 10 }, maxRotation: 0 }
-          },
-          y: {
-            min: 0,
-            max: 100,
-            grid: { color: 'rgba(255, 255, 255, 0.06)' },
-            ticks: {
-              color: '#71717a',
-              font: { size: 10 },
-              callback: (v) => v + '%'
-            }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#18181b',
-            borderColor: '#27272a',
-            borderWidth: 1,
-            titleColor: '#e4e4e7',
-            bodyColor: '#10b981',
-            padding: 8,
-            displayColors: false,
-            callbacks: {
-              label: (context) => ` ${context.parsed.y}%`
-            }
-          }
-        },
-        elements: {
-          point: { radius: 0, hitRadius: 8 },
-          line: { tension: 0.35, borderWidth: 2 }
-        }
+      const commonGrid = {
+        color: 'rgba(30, 41, 59, 0.4)',
+        borderColor: 'transparent',
+        drawTicks: false
       };
 
-      // CPU Chart
-      const cpuCtx = document.getElementById('chart-cpu').getContext('2d');
-      const cpuGradient = cpuCtx.createLinearGradient(0, 0, 0, 160);
-      cpuGradient.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
-      cpuGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+      // 1. CPU Timeline Chart
+      const ctxCpu = document.getElementById('chart-cpu-timeline').getContext('2d');
+      const gradCpu = ctxCpu.createLinearGradient(0, 0, 0, 96);
+      gradCpu.addColorStop(0, 'rgba(6, 182, 212, 0.35)');
+      gradCpu.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
 
-      cpuChart = new Chart(cpuCtx, {
+      chartCpuTimeline = new Chart(ctxCpu, {
         type: 'line',
         data: {
           labels: [],
           datasets: [{
             data: [],
-            borderColor: '#10b981',
-            backgroundColor: cpuGradient,
-            fill: true
-          }]
-        },
-        options: commonOptions
-      });
-
-      // RAM Chart
-      const ramCtx = document.getElementById('chart-ram').getContext('2d');
-      const ramGradient = ramCtx.createLinearGradient(0, 0, 0, 160);
-      ramGradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
-      ramGradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
-
-      ramChart = new Chart(ramCtx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            data: [],
-            borderColor: '#6366f1',
-            backgroundColor: ramGradient,
-            fill: true
+            borderColor: '#06b6d4',
+            backgroundColor: gradCpu,
+            borderWidth: 1.5,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0
           }]
         },
         options: {
-          ...commonOptions,
-          plugins: {
-            ...commonOptions.plugins,
-            tooltip: {
-              ...commonOptions.plugins.tooltip,
-              bodyColor: '#818cf8'
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          scales: {
+            x: { display: false },
+            y: { min: 0, max: 100, grid: commonGrid, ticks: { font: { size: 9, family: 'monospace' }, color: '#64748b', maxTicksLimit: 3 } }
+          }
+        }
+      });
+
+      // 2. Disk I/O Spike Chart
+      const ctxDisk = document.getElementById('chart-disk-io').getContext('2d');
+      chartDiskIo = new Chart(ctxDisk, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              data: [],
+              borderColor: '#38bdf8',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              tension: 0.2,
+              pointRadius: 0
+            },
+            {
+              data: [],
+              borderColor: '#fb923c',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              tension: 0.2,
+              pointRadius: 0
             }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { grid: commonGrid, ticks: { font: { size: 9, family: 'monospace' }, color: '#64748b', maxTicksLimit: 3 } }
+          }
+        }
+      });
+
+      // 3. Network Traffic Graph
+      const ctxNet = document.getElementById('chart-net-io').getContext('2d');
+      chartNetIo = new Chart(ctxNet, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              data: [],
+              borderColor: '#34d399',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              tension: 0.2,
+              pointRadius: 0
+            },
+            {
+              data: [],
+              borderColor: '#22d3ee',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              tension: 0.2,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { grid: commonGrid, ticks: { font: { size: 9, family: 'monospace' }, color: '#64748b', maxTicksLimit: 3 } }
           }
         }
       });
     }
 
-    // Update charts with new data point
-    function pushChartData(timeLabel, cpuVal, ramVal) {
-      if (!cpuChart || !ramChart) return;
-
-      const maxPoints = 30;
-
-      // Update CPU
-      cpuChart.data.labels.push(timeLabel);
-      cpuChart.data.datasets[0].data.push(cpuVal);
-      if (cpuChart.data.labels.length > maxPoints) {
-        cpuChart.data.labels.shift();
-        cpuChart.data.datasets[0].data.shift();
-      }
-      cpuChart.update();
-
-      // Update RAM
-      ramChart.data.labels.push(timeLabel);
-      ramChart.data.datasets[0].data.push(ramVal);
-      if (ramChart.data.labels.length > maxPoints) {
-        ramChart.data.labels.shift();
-        ramChart.data.datasets[0].data.shift();
-      }
-      ramChart.update();
-    }
-
-    // Set initial chart history
-    function setChartHistory(history) {
-      if (!cpuChart || !ramChart || !history) return;
-
-      const labels = history.map(h => h.time);
-      const cpuData = history.map(h => h.cpu);
-      const ramData = history.map(h => h.memory);
-
-      cpuChart.data.labels = labels;
-      cpuChart.data.datasets[0].data = cpuData;
-      cpuChart.update();
-
-      ramChart.data.labels = labels;
-      ramChart.data.datasets[0].data = ramData;
-      ramChart.update();
-    }
-
-    // Helper for progress bar color classes
-    function getPercentColor(pct) {
-      if (pct >= 85) return 'bg-rose-500';
-      if (pct >= 65) return 'bg-amber-500';
-      return 'bg-emerald-500';
-    }
-
-    // Render System KPIs
-    function updateSystemUI(sys) {
-      if (!sys) return;
-
-      elHostname.textContent = sys.hostname || 'localhost';
-      elOsUptime.textContent = `${sys.os} • Uptime: ${sys.uptime}`;
+    // Push chart data points
+    function pushChartPoint(cpuPct, diskRead, diskWrite, netIn, netOut) {
+      const now = new Date().toLocaleTimeString();
 
       // CPU
-      const cpuPct = sys.cpu.percent;
-      elKpiCpuValue.textContent = `${cpuPct}%`;
-      elKpiCpuCores.textContent = `${sys.cpu.cores} Cores`;
-      elKpiCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
-      elKpiCpuBar.className = `${getPercentColor(cpuPct)} h-1.5 rounded-full transition-all duration-500`;
-      
-      const loadStr = sys.cpu.load_avg ? sys.cpu.load_avg.join(', ') : '0, 0, 0';
-      elKpiCpuLoad.textContent = `Load: ${loadStr}`;
-      elKpiCpuFreq.textContent = sys.cpu.freq_mhz > 0 ? `${sys.cpu.freq_mhz} MHz` : '';
-
-      // RAM
-      const ram = sys.memory;
-      elKpiRamValue.textContent = `${ram.percent}%`;
-      elKpiRamDetail.textContent = `${ram.used_gb} / ${ram.total_gb} GB`;
-      elKpiRamBar.style.width = `${Math.min(100, Math.max(0, ram.percent))}%`;
-      elKpiRamBar.className = `${getPercentColor(ram.percent)} h-1.5 rounded-full transition-all duration-500`;
-      elKpiRamFree.textContent = `${ram.available_gb} GB`;
-      elKpiRamTotal.textContent = `Total: ${ram.total_gb} GB`;
-
-      // Disk
-      const disk = sys.disk;
-      elKpiDiskValue.textContent = `${disk.percent}%`;
-      elKpiDiskDetail.textContent = `${disk.used_gb} / ${disk.total_gb} GB`;
-      elKpiDiskBar.style.width = `${Math.min(100, Math.max(0, disk.percent))}%`;
-      elKpiDiskBar.className = `${getPercentColor(disk.percent)} h-1.5 rounded-full transition-all duration-500`;
-      elKpiDiskFree.textContent = `${disk.free_gb} GB`;
-      elKpiDiskTotal.textContent = `Total: ${disk.total_gb} GB`;
-    }
-
-    // Render Docker Containers
-    function updateDockerUI(docker) {
-      if (!docker) return;
-
-      if (docker.is_demo) {
-        elDockerBanner.classList.remove('hidden');
-        elDockerBanner.className = 'rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-amber-200';
-        document.getElementById('docker-alert-title').textContent = '💡 Modo Demostración Activo (Vista previa local)';
-        elDockerAlertDesc.innerHTML = 'El demonio de Docker no se detectó en esta máquina local. Se muestran contenedores simulados para previsualizar el diseño y métricas. <em>En tu servidor Ubuntu con Docker se listarán automáticamente tus contenedores reales.</em>';
-      } else if (!docker.available) {
-        elDockerBanner.classList.remove('hidden');
-        elDockerBanner.className = 'rounded-xl border border-rose-500/30 bg-rose-950/20 p-4 text-rose-200';
-        document.getElementById('docker-alert-title').textContent = 'Docker no disponible';
-        if (docker.error) {
-          elDockerAlertDesc.textContent = docker.error;
+      if (chartCpuTimeline) {
+        chartCpuTimeline.data.labels.push(now);
+        chartCpuTimeline.data.datasets[0].data.push(cpuPct);
+        if (chartCpuTimeline.data.labels.length > MAX_CHART_POINTS) {
+          chartCpuTimeline.data.labels.shift();
+          chartCpuTimeline.data.datasets[0].data.shift();
         }
-      } else {
-        elDockerBanner.classList.add('hidden');
+        chartCpuTimeline.update();
       }
 
-      elKpiContainersTotal.textContent = docker.total || 0;
-      elKpiContainersRunning.textContent = docker.running || 0;
-      elKpiContainersStopped.textContent = docker.stopped || 0;
-      elContainersCountBadge.textContent = docker.total || 0;
+      // Disk
+      if (chartDiskIo) {
+        chartDiskIo.data.labels.push(now);
+        chartDiskIo.data.datasets[0].data.push(diskRead);
+        chartDiskIo.data.datasets[1].data.push(diskWrite);
+        if (chartDiskIo.data.labels.length > MAX_CHART_POINTS) {
+          chartDiskIo.data.labels.shift();
+          chartDiskIo.data.datasets[0].data.shift();
+          chartDiskIo.data.datasets[1].data.shift();
+        }
+        chartDiskIo.update();
+      }
 
-      renderContainersList(docker.containers || []);
+      // Net
+      if (chartNetIo) {
+        chartNetIo.data.labels.push(now);
+        chartNetIo.data.datasets[0].data.push(netIn);
+        chartNetIo.data.datasets[1].data.push(netOut);
+        if (chartNetIo.data.labels.length > MAX_CHART_POINTS) {
+          chartNetIo.data.labels.shift();
+          chartNetIo.data.datasets[0].data.shift();
+          chartNetIo.data.datasets[1].data.shift();
+        }
+        chartNetIo.update();
+      }
     }
 
-    function renderContainersList(containers) {
-      // Filter by tab, category and search
-      const filtered = containers.filter(c => {
-        const statusLower = (c.status || '').toLowerCase();
-        const stateLower = (c.state || '').toLowerCase();
-        const isRunning = statusLower === 'running';
+    // =========================================================================
+    // UPDATE UI FROM METRICS
+    // =========================================================================
+    function updateDashboard(metrics) {
+      if (!metrics) return;
+      currentMetrics = metrics;
 
-        if (currentFilter === 'running' && !isRunning) return false;
-        if (currentFilter === 'stopped' && isRunning) return false;
+      const sys = metrics.system || {};
+      const doc = metrics.docker || {};
+      const alerts = metrics.alerts || { critical_count: 0, warning_count: 0, items: [] };
+      currentAlerts = alerts;
 
-        if (currentCategory !== 'all') {
-          const cat = (c.service_info && c.service_info.category) ? c.service_info.category : 'general';
-          if (cat !== currentCategory) return false;
-        }
+      // 1. Header & Host Info
+      const host = sys.hostname || 'ubuntu-server-pro';
+      document.getElementById('header-host-badge').textContent = host;
+      document.getElementById('header-os-badge').textContent = sys.os || 'Linux';
+      document.getElementById('footer-hostname').textContent = host;
 
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase();
-          const matchName = c.name.toLowerCase().includes(q);
-          const matchImage = c.image.toLowerCase().includes(q);
-          const matchPorts = c.ports && c.ports.some(p => p.display.toLowerCase().includes(q));
-          return matchName || matchImage || matchPorts;
-        }
-        return true;
+      // 2. Alerts Badges
+      document.getElementById('count-critical').textContent = alerts.critical_count || 0;
+      document.getElementById('count-warning').textContent = alerts.warning_count || 0;
+      const bell = document.getElementById('badge-bell');
+      const totalAlerts = (alerts.critical_count || 0) + (alerts.warning_count || 0);
+      if (totalAlerts > 0) {
+        bell.classList.remove('hidden');
+        bell.textContent = totalAlerts;
+      } else {
+        bell.classList.add('hidden');
+      }
+
+      // 3. CPU Aggregate Speedometer Radial Gauge
+      const cpuPct = sys.cpu ? sys.cpu.percent : 0;
+      document.getElementById('radial-cpu-val').textContent = `${cpuPct.toFixed(1)}%`;
+      
+      // Update SVG circle stroke-dashoffset (circumference = 2 * PI * 40 ≈ 251.2)
+      const circumference = 251.2;
+      const offset = circumference - (cpuPct / 100) * circumference;
+      const circleEl = document.getElementById('radial-cpu-circle');
+      circleEl.style.strokeDashoffset = offset;
+      
+      if (cpuPct >= 85) {
+        circleEl.style.stroke = '#f43f5e'; // rose
+      } else if (cpuPct >= 65) {
+        circleEl.style.stroke = '#f59e0b'; // amber
+      } else {
+        circleEl.style.stroke = '#06b6d4'; // cyan
+      }
+
+      // 4. Per-Core Heatmap Bars
+      renderCoresHeatmap(sys.cpu);
+
+      // 5. Memory
+      const mem = sys.memory || {};
+      document.getElementById('kpi-ram-pct').textContent = `${(mem.percent || 0).toFixed(1)}%`;
+      document.getElementById('kpi-ram-used').textContent = mem.used_gb ? `${mem.used_gb} GB` : `${mem.used_mb || 0} MB`;
+      document.getElementById('kpi-ram-cached').textContent = mem.cached_mb ? `${mem.cached_mb} MB` : '--';
+      document.getElementById('kpi-ram-free').textContent = mem.free_mb ? `${mem.free_mb} MB` : `${mem.available_gb || 0} GB`;
+
+      // 6. Load Average
+      const loads = (sys.cpu && sys.cpu.load_avg) ? sys.cpu.load_avg : [0, 0, 0];
+      document.getElementById('load-1').textContent = Number(loads[0] || 0).toFixed(2);
+      document.getElementById('load-5').textContent = Number(loads[1] || 0).toFixed(2);
+      document.getElementById('load-15').textContent = Number(loads[2] || 0).toFixed(2);
+
+      // 7. Disk I/O & Storage
+      const disk = sys.disk || {};
+      const diskIo = disk.io || {};
+      document.getElementById('kpi-disk-pct').textContent = `${(disk.percent || 0).toFixed(1)}% (${disk.used_gb || 0}/${disk.total_gb || 0} GB)`;
+      document.getElementById('disk-read-rate').textContent = `${diskIo.read_kbps || 0} KB/s`;
+      document.getElementById('disk-write-rate').textContent = `${diskIo.write_kbps || 0} KB/s`;
+      document.getElementById('footer-disk-used').textContent = `${disk.used_gb || 0} GB`;
+      document.getElementById('footer-disk-total').textContent = `${disk.total_gb || 0} GB`;
+      document.getElementById('footer-disk-free').textContent = `${disk.free_gb || 0} GB`;
+
+      // 8. Network Traffic
+      const net = (sys.network && sys.network.io) ? sys.network.io : {};
+      document.getElementById('net-in-rate').textContent = `↓ ${net.in_kbps || 0} KB/s`;
+      document.getElementById('net-out-rate').textContent = `↑ ${net.out_kbps || 0} KB/s`;
+
+      // 9. System metadata
+      document.getElementById('kpi-sys-os').textContent = sys.os || 'Linux';
+      document.getElementById('kpi-sys-uptime').textContent = sys.uptime || '0h';
+      document.getElementById('kpi-sys-hostname').textContent = host;
+      document.getElementById('footer-kernel').textContent = sys.kernel || 'Linux 6.8.0-generic';
+      document.getElementById('footer-hostinfo').textContent = `${sys.os || 'Linux'} (${sys.cpu ? sys.cpu.cores : 1} Cores)`;
+      document.getElementById('footer-audit').textContent = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+      // 10. Push point to charts
+      pushChartPoint(
+        cpuPct,
+        diskIo.read_kbps || 0,
+        diskIo.write_kbps || 0,
+        net.in_kbps || 0,
+        net.out_kbps || 0
+      );
+
+      // 11. Docker Containers (Dozzle style)
+      renderDockerContainers(doc);
+    }
+
+    // Render Per-Core Heatmap Bars
+    function renderCoresHeatmap(cpuInfo) {
+      if (!cpuInfo) return;
+      const coresContainer = document.getElementById('cores-container');
+      const cores = cpuInfo.cores_percent || [cpuInfo.percent || 0];
+      const freqStr = cpuInfo.freq_mhz > 0 ? ` • ${cpuInfo.freq_mhz} MHz` : '';
+      document.getElementById('cpu-core-summary').textContent = `${cores.length} Cores${freqStr}`;
+
+      let html = '';
+      cores.forEach((pct, idx) => {
+        const val = Math.min(100, Math.max(0, Number(pct) || 0));
+        html += `
+          <div class="flex items-center gap-2 font-mono text-[10px]">
+            <span class="w-12 text-slate-400 font-semibold">Core ${idx}</span>
+            <div class="flex-1 h-2 bg-slate-900 rounded overflow-hidden border border-slate-800">
+              <div class="h-full core-heat-bar transition-all duration-500 rounded" style="width: ${val}%;"></div>
+            </div>
+            <span class="w-10 text-right text-slate-300 font-bold">${val.toFixed(1)}%</span>
+          </div>
+        `;
       });
+      coresContainer.innerHTML = html;
+    }
 
-      if (filtered.length === 0) {
-        elContainersTbody.innerHTML = '';
-        elNoContainersMsg.classList.remove('hidden');
+    // Render Docker Containers (Dozzle style)
+    function renderDockerContainers(docker) {
+      const containerListEl = document.getElementById('containers-list');
+      const countBadge = document.getElementById('container-count-badge');
+      const demoBanner = document.getElementById('demo-banner');
+
+      if (!docker || !docker.containers) {
+        containerListEl.innerHTML = '<div class="text-center py-6 text-slate-500 font-mono">No se detectó Docker daemon.</div>';
         return;
       }
 
-      elNoContainersMsg.classList.add('hidden');
-
-      const currentHostname = window.location.hostname || 'localhost';
-
-      const rowsHtml = filtered.map(c => {
-        const statusLower = (c.status || '').toLowerCase();
-        const stateLower = (c.state || '').toLowerCase();
-        const isRunning = statusLower === 'running';
-        const isRestarting = statusLower.includes('restarting') || stateLower.includes('restarting');
-
-        // Status Indicator
-        let statusBadge = '';
-        if (isRestarting) {
-          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-               <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
-               Restarting
-             </span>`;
-        } else if (isRunning) {
-          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-               <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-slow shadow-sm shadow-emerald-400"></span>
-               Up
-             </span>`;
-        } else {
-          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-               <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-               Exited
-             </span>`;
-        }
-
-        // Health indicator
-        let healthBadge = '';
-        if (c.health === 'healthy') {
-          healthBadge = `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 font-mono">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Saludable
-          </span>`;
-        } else if (c.health === 'unhealthy') {
-          healthBadge = `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-500/30 font-mono animate-pulse">
-            <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span> No saludable
-          </span>`;
-        } else if (c.health === 'starting') {
-          healthBadge = `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-500/30 font-mono">
-            <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span> Iniciando
-          </span>`;
-        }
-
-        // Ports rendering with direct clickable link
-        let portsHtml = '<span class="text-zinc-500 font-mono text-[11px]">-</span>';
-        if (c.ports && c.ports.length > 0) {
-          portsHtml = `<div class="flex flex-wrap gap-1.5">` + c.ports.map(p => {
-            if (p.link_port) {
-              const url = `http://${currentHostname}:${p.link_port}`;
-              return `<a href="${url}" target="_blank" rel="noopener noreferrer" 
-                         title="Abrir http://${currentHostname}:${p.link_port}"
-                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-600/20 text-emerald-400 hover:text-emerald-300 border border-zinc-700/60 hover:border-emerald-500/40 font-mono text-[11px] transition">
-                        <span>${p.display}</span>
-                        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                      </a>`;
-            } else {
-              return `<span class="px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800 font-mono text-[11px]">${p.display}</span>`;
-            }
-          }).join('') + `</div>`;
-        }
-
-        // CPU progress
-        const cpuPercent = c.cpu_percent || 0;
-        const memPercent = c.memory ? c.memory.percent : 0;
-        const memUsedMb = c.memory ? c.memory.used_mb : 0;
-
-        return `
-          <tr class="hover:bg-zinc-850/40 transition">
-            <!-- Status -->
-            <td class="py-3 px-4 whitespace-nowrap">
-              <div class="flex flex-col items-start gap-1">
-                ${statusBadge}
-                ${healthBadge}
-              </div>
-            </td>
-
-            <!-- Name & ID -->
-            <td class="py-3 px-4">
-              <div class="font-semibold text-white tracking-tight flex items-center gap-1.5">
-                <span>${c.service_info ? c.service_info.icon : '📦'}</span>
-                <span>${c.name}</span>
-                ${c.service_info && c.service_info.label ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60 font-normal">${c.service_info.label}</span>` : ''}
-              </div>
-              <span class="text-[11px] text-zinc-500 font-mono">${c.id}</span>
-            </td>
-
-            <!-- Image -->
-            <td class="py-3 px-4">
-              <span class="inline-block max-w-[200px] truncate text-zinc-300 font-mono text-[11px] bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800/80" title="${c.image}">
-                ${c.image}
-              </span>
-            </td>
-
-            <!-- CPU -->
-            <td class="py-3 px-4">
-              ${isRunning ? `
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs w-10 text-right ${cpuPercent > 50 ? 'text-amber-400' : 'text-zinc-200'}">${cpuPercent}%</span>
-                  <div class="w-16 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-emerald-400 h-1.5 rounded-full" style="width: ${Math.min(100, cpuPercent)}%"></div>
-                  </div>
-                </div>
-              ` : `<span class="text-zinc-600 font-mono">-</span>`}
-            </td>
-
-            <!-- RAM -->
-            <td class="py-3 px-4">
-              ${isRunning ? `
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono text-xs text-zinc-200">${memUsedMb} MB</span>
-                    <span class="text-[10px] text-zinc-500 font-mono">(${memPercent}%)</span>
-                  </div>
-                  <div class="w-20 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-indigo-400 h-1.5 rounded-full" style="width: ${Math.min(100, memPercent)}%"></div>
-                  </div>
-                </div>
-              ` : `<span class="text-zinc-600 font-mono">-</span>`}
-            </td>
-
-            <!-- Ports -->
-            <td class="py-3 px-4">
-              ${portsHtml}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      elContainersTbody.innerHTML = rowsHtml;
-    }
-
-    // WebSocket connection
-    function connectWebSocket() {
-      if (ws) {
-        try { ws.close(); } catch(e) {}
+      if (docker.is_demo) {
+        demoBanner.classList.remove('hidden');
+      } else {
+        demoBanner.classList.add('hidden');
       }
 
+      countBadge.textContent = `${docker.running || 0} Running | ${docker.stopped || 0} Stopped`;
+
+      // Filter containers
+      const query = (document.getElementById('search-container').value || '').toLowerCase().trim();
+      let list = docker.containers;
+
+      if (currentFilter === 'running') {
+        list = list.filter(c => (c.status || '').toLowerCase() === 'running');
+      } else if (currentFilter === 'alert') {
+        list = list.filter(c => (c.health || '').toLowerCase() === 'unhealthy' || (c.status || '').toLowerCase() === 'restarting' || (c.status || '').toLowerCase() === 'exited');
+      }
+
+      if (query) {
+        list = list.filter(c => 
+          (c.name || '').toLowerCase().includes(query) ||
+          (c.image || '').toLowerCase().includes(query) ||
+          (c.ports || []).some(p => (p.display || '').toLowerCase().includes(query))
+        );
+      }
+
+      if (list.length === 0) {
+        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay contenedores que coincidan con el filtro.</div>';
+        return;
+      }
+
+      let rowsHtml = '';
+      list.forEach(c => {
+        const isRunning = (c.status || '').toLowerCase() === 'running';
+        const isRestarting = (c.status || '').toLowerCase() === 'restarting';
+        const isStopped = !isRunning && !isRestarting;
+
+        // Status pill
+        let statusBadge = '';
+        if (isRunning) {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-600 text-white tracking-wide shadow-[0_0_8px_rgba(16,185,129,0.3)]">RUNNING</span>`;
+        } else if (isRestarting) {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-amber-600 text-white tracking-wide animate-pulse">RESTART</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-700 text-white tracking-wide">STOPPED</span>`;
+        }
+
+        // Health Tag
+        let healthTag = '';
+        const health = (c.health || '').toLowerCase();
+        if (health === 'healthy') {
+          healthTag = `<span class="text-[9px] text-emerald-400 font-mono">● Saludable</span>`;
+        } else if (health === 'unhealthy') {
+          healthTag = `<span class="text-[9px] text-rose-400 font-mono font-bold animate-pulse">⚠ UNHEALTHY</span>`;
+        }
+
+        // Ports formatting
+        let portsHtml = '<span class="text-slate-600 text-[10px] font-mono">--</span>';
+        if (c.ports && c.ports.length > 0) {
+          portsHtml = c.ports.map(p => {
+            if (p.link_port) {
+              const host = window.location.hostname || 'localhost';
+              const url = `http://${host}:${p.link_port}`;
+              return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[10px]" title="Abrir servicio web">${p.link_port} ↗</a>`;
+            }
+            return `<span class="text-slate-400 font-mono text-[10px]">${p.internal}/${p.protocol || 'tcp'}</span>`;
+          }).join(' ');
+        }
+
+        // Service categorization
+        const sInfo = c.service_info || { icon: '🐳', label: 'App' };
+        const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
+        const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
+
+        // Mini sparkline SVG wave
+        const sparklineColor = isRunning ? '#10b981' : '#64748b';
+        const waveSvg = `
+          <svg class="w-14 h-4 text-emerald-400" viewBox="0 0 50 15" fill="none" stroke="${sparklineColor}" stroke-width="1.8">
+            <path d="M0,8 Q10,${isRunning ? '2' : '8'} 20,${isRunning ? '12' : '8'} T35,${isRunning ? '4' : '8'} T50,8" />
+          </svg>
+        `;
+
+        rowsHtml += `
+          <div class="grid grid-cols-12 gap-2 items-center px-2.5 py-2 bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/40 transition">
+            
+            <!-- Col 1: Icon & Name (5 cols) -->
+            <div class="col-span-5 flex items-center gap-2 overflow-hidden">
+              <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🐳'}</span>
+              <div class="flex flex-col truncate">
+                <span class="font-bold text-slate-100 truncate text-[11px] hover:text-cyan-400 transition cursor-pointer" onclick="viewContainerLogs('${c.id}', '${c.name}')">${c.name}</span>
+                <span class="text-[10px] font-mono text-slate-500 truncate">${c.image}</span>
+              </div>
+            </div>
+
+            <!-- Col 2: Status & Health (2 cols) -->
+            <div class="col-span-2 flex flex-col items-center justify-center gap-0.5">
+              ${statusBadge}
+              ${healthTag}
+            </div>
+
+            <!-- Col 3: Ports (2 cols) -->
+            <div class="col-span-2 flex flex-wrap items-center justify-center gap-1">
+              ${portsHtml}
+            </div>
+
+            <!-- Col 4: Metrics, Sparkline, Logs (3 cols) -->
+            <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px]">
+              <div class="flex flex-col text-right">
+                <span class="text-slate-300">CPU: <b class="text-cyan-400">${cpuVal}%</b></span>
+                <span class="text-slate-400">MEM: ${memMb} MB</span>
+              </div>
+
+              <!-- Sparkline -->
+              <div class="hidden sm:block">
+                ${waveSvg}
+              </div>
+
+              <!-- LOGS button -->
+              <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
+                LOGS
+              </button>
+            </div>
+
+          </div>
+        `;
+      });
+
+      containerListEl.innerHTML = rowsHtml;
+    }
+
+    // Filter selector
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-filter') === filter) {
+          btn.className = 'filter-btn active px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40';
+        } else {
+          btn.className = 'filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white';
+        }
+      });
+      if (currentMetrics) {
+        renderDockerContainers(currentMetrics.docker);
+      }
+    }
+
+    // Instant search listener
+    document.getElementById('search-container').addEventListener('input', () => {
+      if (currentMetrics) {
+        renderDockerContainers(currentMetrics.docker);
+      }
+    });
+
+    // =========================================================================
+    // MODAL LOGS & CONTAINER ACTIONS
+    // =========================================================================
+    async function viewContainerLogs(containerId, containerName) {
+      currentLogsContainerId = containerId;
+      document.getElementById('modal-logs-title').textContent = containerName || containerId;
+      document.getElementById('modal-logs-body').textContent = 'Cargando registros en vivo...';
+      openModal('modal-logs');
+
+      try {
+        const resp = await fetch(`/api/containers/${containerId}/logs?tail=120`);
+        const data = await resp.json();
+        document.getElementById('modal-logs-body').textContent = data.logs || 'Sin registros.';
+        // Auto scroll to bottom
+        const el = document.getElementById('modal-logs-body');
+        el.scrollTop = el.scrollHeight;
+      } catch (e) {
+        document.getElementById('modal-logs-body').textContent = `Error al consultar logs: ${e.message}`;
+      }
+    }
+
+    async function refreshCurrentLogs() {
+      if (currentLogsContainerId) {
+        await viewContainerLogs(currentLogsContainerId, document.getElementById('modal-logs-title').textContent);
+      }
+    }
+
+    function copyCurrentLogs() {
+      const text = document.getElementById('modal-logs-body').textContent;
+      navigator.clipboard.writeText(text);
+      alert('¡Logs copiados al portapapeles!');
+    }
+
+    async function restartAllContainers() {
+      if (!confirm('¿Deseas reiniciar todos los contenedores de producción?')) return;
+      try {
+        const res = await fetch('/api/containers/restart-all', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message || 'Contenedores reiniciados correctamente.');
+      } catch (e) {
+        alert(`Error al reiniciar: ${e.message}`);
+      }
+    }
+
+    // =========================================================================
+    // ALERTS & SERVICE MAP MODALS
+    // =========================================================================
+    function renderAlertsModal(filter) {
+      const container = document.getElementById('alerts-modal-content');
+      let items = currentAlerts.items || [];
+
+      if (filter === 'critical') items = items.filter(a => a.level === 'critical');
+      if (filter === 'warning') items = items.filter(a => a.level === 'warning');
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center text-slate-400 font-mono">
+            <span class="text-3xl block mb-2">🟢</span>
+            <b>Todos los sistemas operan dentro de los parámetros normales.</b>
+            <p class="text-[11px] text-slate-500 mt-1">No hay alertas ${filter === 'all' ? '' : filter} activas.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      items.forEach(a => {
+        const isCrit = a.level === 'critical';
+        const borderCol = isCrit ? 'border-rose-500/70 bg-rose-950/20' : 'border-amber-500/70 bg-amber-950/20';
+        const badgeCol = isCrit ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white';
+
+        html += `
+          <div class="border ${borderCol} rounded-lg p-3 flex flex-col gap-1 font-mono">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${badgeCol}">${a.level}</span>
+                <span class="font-bold text-slate-200 text-xs">${a.title}</span>
+              </div>
+              <span class="text-[10px] text-slate-500">${a.timestamp || ''}</span>
+            </div>
+            <p class="text-[11px] text-slate-300">${a.message}</p>
+            <div class="text-[9px] text-slate-500 mt-1">Fuente: <span class="text-cyan-400">${a.source}</span></div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderServiceMapModal() {
+      const grid = document.getElementById('service-map-grid');
+      const services = (currentMetrics && currentMetrics.discovered_services) ? currentMetrics.discovered_services : [];
+
+      if (services.length === 0) {
+        grid.innerHTML = '<div class="text-slate-500 col-span-2 text-center py-6 font-mono">No se detectaron servicios web con puertos expuestos.</div>';
+        return;
+      }
+
+      let html = '';
+      const host = window.location.hostname || 'localhost';
+
+      services.forEach(s => {
+        const port = s.link_port || s.port;
+        const url = `http://${host}:${port}`;
+
+        html += `
+          <a href="${url}" target="_blank" rel="noopener noreferrer" 
+             class="border border-slate-800 hover:border-cyan-500/80 bg-slate-900/80 hover:bg-slate-850 p-3 rounded-lg flex items-center justify-between transition group">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">${s.icon || '🌐'}</span>
+              <div class="flex flex-col">
+                <span class="font-bold text-xs text-slate-100 group-hover:text-cyan-300 transition">${s.name}</span>
+                <span class="text-[10px] text-slate-400 font-mono">${s.category_label || 'App'} • ${s.source.toUpperCase()}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono font-bold text-xs">:${port}</span>
+              <span class="text-slate-500 group-hover:text-cyan-400 transition text-xs">↗</span>
+            </div>
+          </a>
+        `;
+      });
+      grid.innerHTML = html;
+    }
+
+    // =========================================================================
+    // UPDATES CHECKER
+    // =========================================================================
+    async function checkUpdates() {
+      const elLocal = document.getElementById('update-modal-local');
+      const elRemote = document.getElementById('update-modal-remote');
+      const elStatus = document.getElementById('update-modal-status');
+      const labelBtn = document.getElementById('btn-update-label');
+      const dot = document.getElementById('update-indicator');
+
+      try {
+        const res = await fetch('/api/updates');
+        const data = await res.json();
+
+        elLocal.textContent = `${data.version} (${data.current_commit})`;
+        elRemote.textContent = data.latest_commit || '--';
+
+        if (data.update_available) {
+          elStatus.textContent = '¡Nueva versión disponible en GitHub!';
+          elStatus.className = 'text-amber-400 font-bold animate-pulse';
+          labelBtn.textContent = 'Actualizar 🚀';
+          dot.className = 'h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping';
+        } else {
+          elStatus.textContent = 'Sistema 100% al día';
+          elStatus.className = 'text-emerald-400 font-bold';
+          labelBtn.textContent = 'v2.0 Sync';
+          dot.className = 'h-1.5 w-1.5 rounded-full bg-emerald-400';
+        }
+      } catch (e) {
+        elStatus.textContent = 'No se pudo conectar a GitHub';
+      }
+    }
+
+    function copyUpdateCommand() {
+      const text = document.getElementById('cmd-update').textContent;
+      navigator.clipboard.writeText(text);
+      alert('¡Comando copiado al portapapeles! Ejecútalo en tu terminal Ubuntu.');
+    }
+
+    // =========================================================================
+    // WEBSOCKET & REST POLLING FALLBACK
+    // =========================================================================
+    function connectWebSocket() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws/stats`;
 
-      setWsStatus('connecting');
+      const dot = document.getElementById('footer-conn-dot');
 
-      try {
-        ws = new WebSocket(wsUrl);
+      ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => {
-          setWsStatus('connected');
-          if (reconnectTimer) {
-            clearTimeout(reconnectTimer);
-            reconnectTimer = null;
+      ws.onopen = () => {
+        dot.className = 'h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] pulse-dot';
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'initial' || payload.type === 'update') {
+            updateDashboard(payload.metrics);
           }
-          if (pollingFallbackTimer) {
-            clearInterval(pollingFallbackTimer);
-            pollingFallbackTimer = null;
-          }
-        };
+        } catch (err) {
+          console.error('Error parseando mensaje WS:', err);
+        }
+      };
 
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            handleIncomingData(data);
-          } catch(err) {
-            console.error('Error parsing WS message:', err);
-          }
-        };
+      ws.onclose = () => {
+        dot.className = 'h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]';
+        clearTimeout(wsReconnectTimeout);
+        wsReconnectTimeout = setTimeout(connectWebSocket, 3000);
+      };
 
-        ws.onclose = () => {
-          setWsStatus('disconnected');
-          scheduleReconnect();
-        };
-
-        ws.onerror = () => {
-          setWsStatus('disconnected');
-          ws.close();
-        };
-      } catch (err) {
-        setWsStatus('disconnected');
-        scheduleReconnect();
-      }
+      ws.onerror = () => {
+        ws.close();
+      };
     }
 
-    function setWsStatus(status) {
-      if (status === 'connected') {
-        elWsIndicator.className = 'h-2 w-2 rounded-full bg-emerald-400 animate-pulse';
-        elWsText.textContent = 'En Vivo';
-        elWsText.className = 'text-emerald-400 font-medium';
-        elWsStatus.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-950/40 border border-emerald-500/30';
-      } else if (status === 'connecting') {
-        elWsIndicator.className = 'h-2 w-2 rounded-full bg-amber-400 animate-ping';
-        elWsText.textContent = 'Conectando...';
-        elWsText.className = 'text-amber-400';
-        elWsStatus.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800';
+    // Manual Refresh
+    function triggerManualRefresh() {
+      const icon = document.getElementById('refresh-icon');
+      icon.classList.add('animate-spin');
+      setTimeout(() => icon.classList.remove('animate-spin'), 1000);
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send('refresh');
       } else {
-        elWsIndicator.className = 'h-2 w-2 rounded-full bg-rose-500';
-        elWsText.textContent = 'Reconectando';
-        elWsText.className = 'text-rose-400';
-        elWsStatus.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-950/30 border border-rose-500/30';
-      }
-    }
-
-    function scheduleReconnect() {
-      if (!reconnectTimer) {
-        reconnectTimer = setTimeout(() => {
-          reconnectTimer = null;
-          connectWebSocket();
-        }, 3000);
-      }
-      // Start fallback HTTP polling if WS is down
-      if (!pollingFallbackTimer) {
-        pollingFallbackTimer = setInterval(fetchMetricsHTTP, 3000);
-      }
-    }
-
-    // Fallback or Initial HTTP fetch
-    async function fetchMetricsHTTP() {
-      try {
-        const res = await fetch('/api/status');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.metrics) {
-          handleIncomingData({
-            type: 'update',
-            metrics: data.metrics,
-            history_point: data.history && data.history.length ? data.history[data.history.length - 1] : null
+        fetch('/api/status')
+          .then(r => r.json())
+          .then(d => {
+            if (d.metrics) updateDashboard(d.metrics);
           });
-          if (data.history && (!cpuChart.data.labels.length)) {
-            setChartHistory(data.history);
-          }
-        }
-      } catch(err) {
-        console.warn('HTTP fallback error:', err);
       }
     }
 
-    function updateServicesUI(services) {
-      const grid = document.getElementById('services-grid');
-      const countEl = document.getElementById('services-online-count');
-      const emptyEl = document.getElementById('services-empty-msg');
-      if (!grid) return;
-
-      if (!services || services.length === 0) {
-        grid.innerHTML = '';
-        if (emptyEl) emptyEl.classList.remove('hidden');
-        if (countEl) countEl.textContent = '0';
-        return;
-      }
-
-      if (emptyEl) emptyEl.classList.add('hidden');
-      if (countEl) countEl.textContent = services.length;
-
-      const currentHostname = window.location.hostname || 'localhost';
-
-      grid.innerHTML = services.map(s => {
-        const isDocker = s.source === 'docker';
-        const hasWebLink = !!s.link_port;
-        const linkUrl = `http://${currentHostname}:${s.link_port}`;
-
-        return `
-          <div class="rounded-lg bg-zinc-950/80 border border-zinc-800/90 p-3.5 flex flex-col justify-between hover:border-zinc-700 transition group">
-            <div>
-              <div class="flex items-center justify-between gap-2 mb-2">
-                <div class="flex items-center gap-2 truncate">
-                  <span class="text-base shrink-0">${s.icon || '🔌'}</span>
-                  <h3 class="font-semibold text-xs text-white truncate" title="${s.name}">${s.name}</h3>
-                </div>
-                <span class="text-[10px] px-1.5 py-0.5 rounded font-mono ${isDocker ? 'bg-cyan-950/60 text-cyan-400 border border-cyan-800/40' : 'bg-violet-950/60 text-violet-400 border border-violet-800/40'}">
-                  ${isDocker ? 'Docker' : 'Host'}
-                </span>
-              </div>
-              <div class="flex items-center justify-between text-[11px] text-zinc-400 mb-3">
-                <span class="text-zinc-400 font-mono font-medium">${s.display_port}</span>
-                <span class="text-[10px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">${s.category_label || 'Servicio'}</span>
-              </div>
-            </div>
-            <div>
-              ${hasWebLink ? `
-                <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" 
-                   class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 transition shadow-sm">
-                  <span>Abrir Servicio</span>
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                  </svg>
-                </a>
-              ` : `
-                <div class="w-full text-center py-1 rounded bg-zinc-900/60 text-[10px] font-mono text-zinc-500 border border-zinc-800">
-                  Puerto Escuchando
-                </div>
-              `}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function handleIncomingData(data) {
-      if (data.type === 'initial') {
-        fullState = data.metrics;
-        updateSystemUI(fullState.system);
-        updateDockerUI(fullState.docker);
-        updateServicesUI(fullState.discovered_services || []);
-        if (data.history) {
-          setChartHistory(data.history);
-        }
-      } else if (data.type === 'update') {
-        fullState = data.metrics;
-        updateSystemUI(fullState.system);
-        updateDockerUI(fullState.docker);
-        updateServicesUI(fullState.discovered_services || []);
-        if (data.history_point) {
-          pushChartData(data.history_point.time, data.history_point.cpu, data.history_point.memory);
-        }
-      }
-
-      // Update timestamp
-      const now = new Date();
-      elLastUpdate.textContent = now.toLocaleTimeString();
-    }
-
-    // Setup event listeners
-    function setupEvents() {
-      // Search
-      const searchInput = document.getElementById('container-search');
-      searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.trim();
-        if (fullState.docker) {
-          renderContainersList(fullState.docker.containers || []);
-        }
-      });
-
-      // Filter tabs
-      const filterTabs = document.querySelectorAll('.filter-tab');
-      filterTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          filterTabs.forEach(t => {
-            t.className = 'filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition';
-          });
-          tab.className = 'filter-tab px-3 py-1 rounded-md font-medium text-white bg-zinc-800 transition';
-          currentFilter = tab.getAttribute('data-filter');
-          if (fullState.docker) {
-            renderContainersList(fullState.docker.containers || []);
-          }
-        });
-      });
-
-      // Category filter dropdown
-      const categoryFilter = document.getElementById('category-filter');
-      if (categoryFilter) {
-        categoryFilter.addEventListener('change', (e) => {
-          currentCategory = e.target.value;
-          if (fullState.docker) {
-            renderContainersList(fullState.docker.containers || []);
-          }
-        });
-      }
-
-      // Refresh button
-      document.getElementById('btn-refresh').addEventListener('click', () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send('refresh');
-        } else {
-          fetchMetricsHTTP();
-        }
-      });
-
-      // Updates Modal Events
-      const modalUpdates = document.getElementById('modal-updates');
-      const btnUpdates = document.getElementById('btn-updates');
-      const closeUpdates = document.getElementById('close-modal-updates');
-      const btnCopyCmd = document.getElementById('btn-copy-update-cmd');
-      const btnCheckUpdatesNow = document.getElementById('btn-check-updates-now');
-
-      if (btnUpdates) {
-        btnUpdates.addEventListener('click', () => {
-          if (modalUpdates) modalUpdates.classList.remove('hidden');
-          checkUpdates();
-        });
-      }
-
-      if (closeUpdates) {
-        closeUpdates.addEventListener('click', () => {
-          if (modalUpdates) modalUpdates.classList.add('hidden');
-        });
-      }
-
-      if (modalUpdates) {
-        modalUpdates.addEventListener('click', (e) => {
-          if (e.target === modalUpdates) modalUpdates.classList.add('hidden');
-        });
-      }
-
-      if (btnCopyCmd) {
-        btnCopyCmd.addEventListener('click', () => {
-          const cmdText = document.getElementById('update-cmd-text').textContent;
-          navigator.clipboard.writeText(cmdText).then(() => {
-            btnCopyCmd.textContent = '¡Copiado!';
-            btnCopyCmd.className = 'text-xs text-emerald-400 font-bold px-2.5 py-1 rounded bg-zinc-900 border border-emerald-500/40 transition';
-            setTimeout(() => {
-              btnCopyCmd.textContent = 'Copiar';
-              btnCopyCmd.className = 'text-xs text-zinc-400 hover:text-white px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 transition border border-zinc-700/60';
-            }, 2000);
-          }).catch(() => {
-            alert('Copia el comando: ' + cmdText);
-          });
-        });
-      }
-
-      if (btnCheckUpdatesNow) {
-        btnCheckUpdatesNow.addEventListener('click', () => {
-          btnCheckUpdatesNow.innerHTML = '<span>Comprobando en GitHub...</span>';
-          checkUpdates().finally(() => {
-            setTimeout(() => {
-              btnCheckUpdatesNow.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Comprobar actualizaciones en GitHub</span>
-              `;
-            }, 1000);
-          });
-        });
-      }
-    }
-
-    // Check updates via API
-    async function checkUpdates() {
-      try {
-        const res = await fetch('/api/updates');
-        if (!res.ok) return;
-        const data = await res.json();
-        
-        const dot = document.getElementById('update-dot');
-        const text = document.getElementById('update-text');
-        const modalCurrVer = document.getElementById('modal-curr-version');
-        const modalLatest = document.getElementById('modal-latest-commit');
-        const modalBadge = document.getElementById('modal-status-badge');
-        const modalMsg = document.getElementById('modal-latest-msg');
-
-        if (modalCurrVer) modalCurrVer.textContent = 'v' + data.version + ' (' + data.current_commit + ')';
-        if (modalLatest) modalLatest.textContent = data.latest_commit || '--';
-        if (modalMsg) modalMsg.textContent = data.latest_message || '';
-
-        if (data.update_available) {
-          if (dot) dot.className = 'h-2 w-2 rounded-full bg-amber-400 animate-ping';
-          if (text) {
-            text.textContent = '¡Update Disponible! 🚀';
-            text.className = 'font-mono text-[11px] text-amber-400 font-bold';
-          }
-          if (modalBadge) {
-            modalBadge.className = 'px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[11px] font-sans font-bold';
-            modalBadge.textContent = '¡Nueva versión disponible!';
-          }
-        } else {
-          if (dot) dot.className = 'h-2 w-2 rounded-full bg-emerald-400';
-          if (text) {
-            text.textContent = 'v' + data.version;
-            text.className = 'font-mono text-[11px] text-zinc-300';
-          }
-          if (modalBadge) {
-            modalBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[11px] font-sans';
-            modalBadge.textContent = 'Al día ✅';
-          }
-        }
-      } catch (e) {
-        console.warn('Error verificando actualizaciones:', e);
-      }
-    }
-
-    // Init on DOM ready
-    window.addEventListener('DOMContentLoaded', () => {
+    // Startup
+    document.addEventListener('DOMContentLoaded', () => {
       initCharts();
-      setupEvents();
-      fetchMetricsHTTP(); // Carga instantánea
-      connectWebSocket();  // Transmisión en tiempo real
-      checkUpdates();      // Comprobar si hay actualizaciones
-      setInterval(checkUpdates, 5 * 60 * 1000); // Comprobar cada 5 minutos
+      connectWebSocket();
+
+      // Initial HTTP fetch to prevent blank state
+      fetch('/api/status')
+        .then(r => r.json())
+        .then(d => {
+          if (d.metrics) updateDashboard(d.metrics);
+        })
+        .catch(() => {});
+
+      // Check updates on boot
+      checkUpdates();
     });
   </script>
 </body>

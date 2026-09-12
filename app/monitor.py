@@ -156,19 +156,68 @@ def scan_host_listening_services() -> list:
     return discovered
 
 
+_last_io_time = None
+_last_disk_io = None
+_last_net_io = None
+
+def get_io_rates() -> tuple:
+    """Calcula tasas de transferencia en tiempo real para disco y red (KB/s)."""
+    global _last_io_time, _last_disk_io, _last_net_io
+    now = time.time()
+    disk_rates = {"read_kbps": 0.0, "write_kbps": 0.0, "read_mb": 0.0, "write_mb": 0.0}
+    net_rates = {"in_kbps": 0.0, "out_kbps": 0.0, "in_mb": 0.0, "out_mb": 0.0}
+
+    try:
+        curr_disk = psutil.disk_io_counters()
+        curr_net = psutil.net_io_counters()
+
+        if curr_disk:
+            disk_rates["read_mb"] = round(curr_disk.read_bytes / (1024 * 1024), 1)
+            disk_rates["write_mb"] = round(curr_disk.write_bytes / (1024 * 1024), 1)
+
+        if curr_net:
+            net_rates["in_mb"] = round(curr_net.bytes_recv / (1024 * 1024), 1)
+            net_rates["out_mb"] = round(curr_net.bytes_sent / (1024 * 1024), 1)
+
+        if _last_io_time is not None:
+            dt = max(0.5, now - _last_io_time)
+            if curr_disk and _last_disk_io:
+                disk_rates["read_kbps"] = round(max(0, curr_disk.read_bytes - _last_disk_io.read_bytes) / (1024 * dt), 1)
+                disk_rates["write_kbps"] = round(max(0, curr_disk.write_bytes - _last_disk_io.write_bytes) / (1024 * dt), 1)
+            if curr_net and _last_net_io:
+                net_rates["in_kbps"] = round(max(0, curr_net.bytes_recv - _last_net_io.bytes_recv) / (1024 * dt), 1)
+                net_rates["out_kbps"] = round(max(0, curr_net.bytes_sent - _last_net_io.bytes_sent) / (1024 * dt), 1)
+
+        _last_io_time = now
+        _last_disk_io = curr_disk
+        _last_net_io = curr_net
+    except Exception:
+        pass
+
+    return disk_rates, net_rates
+
+
 def get_system_metrics() -> dict:
     """Recolecta las métricas de rendimiento del host en tiempo real."""
-    # CPU usage
+    # CPU usage general y por núcleo
     cpu_percent = psutil.cpu_percent(interval=None)
+    cpu_cores = psutil.cpu_percent(interval=None, percpu=True)
+    if not cpu_cores:
+        cpu_cores = [cpu_percent]
+
     cpu_count = psutil.cpu_count(logical=True)
     cpu_freq = psutil.cpu_freq()
     freq_current = round(cpu_freq.current, 0) if cpu_freq else 0
 
-    # Memory usage
+    # Memory usage detallado
     vm = psutil.virtual_memory()
     mem_total_gb = round(vm.total / (1024 ** 3), 2)
     mem_used_gb = round(vm.used / (1024 ** 3), 2)
     mem_available_gb = round(vm.available / (1024 ** 3), 2)
+    cached_bytes = getattr(vm, 'cached', 0) or getattr(vm, 'buffers', 0)
+    mem_cached_mb = round(cached_bytes / (1024 * 1024), 1)
+    mem_free_mb = round(vm.free / (1024 * 1024), 1)
+    mem_used_mb = round(vm.used / (1024 * 1024), 1)
     mem_percent = vm.percent
 
     # Disk usage (check /host if mounted inside docker container, otherwise root / or windows drive)
@@ -198,6 +247,9 @@ def get_system_metrics() -> dict:
         except Exception:
             pass
 
+    # Tasas de I/O de disco y tráfico de red
+    disk_io, net_io = get_io_rates()
+
     # Uptime
     boot_time = psutil.boot_time()
     uptime_seconds = time.time() - boot_time
@@ -205,12 +257,14 @@ def get_system_metrics() -> dict:
     return {
         "hostname": socket.gethostname(),
         "os": get_detailed_os(),
+        "kernel": f"{platform.system()} {platform.release()}",
         "uptime": format_uptime(uptime_seconds),
         "uptime_seconds": int(uptime_seconds),
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "cpu": {
             "percent": cpu_percent,
             "cores": cpu_count,
+            "cores_percent": cpu_cores,
             "freq_mhz": freq_current,
             "load_avg": load_avg
         },
@@ -218,6 +272,9 @@ def get_system_metrics() -> dict:
             "total_gb": mem_total_gb,
             "used_gb": mem_used_gb,
             "available_gb": mem_available_gb,
+            "used_mb": mem_used_mb,
+            "cached_mb": mem_cached_mb,
+            "free_mb": mem_free_mb,
             "percent": mem_percent
         },
         "disk": {
@@ -225,7 +282,11 @@ def get_system_metrics() -> dict:
             "total_gb": disk_total_gb,
             "used_gb": disk_used_gb,
             "free_gb": disk_free_gb,
-            "percent": disk_percent
+            "percent": disk_percent,
+            "io": disk_io
+        },
+        "network": {
+            "io": net_io
         }
     }
 
@@ -336,81 +397,128 @@ def get_demo_containers() -> list:
     import random
     containers = [
         {
-            "id": "a1b2c3d4e5f6",
-            "name": "web-nginx-proxy",
-            "image": "nginx:alpine-slim",
+            "id": "wz01a2b3c4d5",
+            "name": "single-node-wazuh.dashboard-1",
+            "image": "wazuh/wazuh-dashboard:4.9.0",
             "status": "running",
             "state": "running",
-            "created": "2026-09-10T10:00:00Z",
+            "health": "healthy",
+            "created": "2026-09-10T08:00:00Z",
             "ports": [
-                {"internal": "80", "external": "80", "protocol": "tcp", "display": "80:80/tcp", "link_port": "80"},
-                {"internal": "443", "external": "443", "protocol": "tcp", "display": "443:443/tcp", "link_port": "443"}
+                {"internal": "5601", "external": "8443", "protocol": "tcp", "display": "8443:5601/tcp", "link_port": "8443"}
             ],
-            "cpu_percent": round(random.uniform(0.3, 1.8), 1),
-            "memory": {"used_mb": 24.5, "limit_mb": 512.0, "percent": 4.8}
+            "cpu_percent": round(random.uniform(1.1, 3.2), 1),
+            "memory": {"used_mb": 486.2, "limit_mb": 2048.0, "percent": 23.7}
         },
         {
-            "id": "b2c3d4e5f6a1",
-            "name": "api-backend-fastapi",
-            "image": "python:3.11-slim",
+            "id": "gl02b3c4d5e6",
+            "name": "graylog-graylog-1",
+            "image": "graylog/graylog:6.0",
             "status": "running",
             "state": "running",
-            "created": "2026-09-10T10:05:00Z",
+            "health": "unhealthy",
+            "created": "2026-09-10T08:15:00Z",
             "ports": [
-                {"internal": "8000", "external": "8080", "protocol": "tcp", "display": "8080:8000/tcp", "link_port": "8080"}
+                {"internal": "9000", "external": "9000", "protocol": "tcp", "display": "9000:9000/tcp", "link_port": "9000"}
             ],
-            "cpu_percent": round(random.uniform(1.2, 4.5), 1),
-            "memory": {"used_mb": 88.2, "limit_mb": 1024.0, "percent": 8.6}
+            "cpu_percent": round(random.uniform(2.4, 5.8), 1),
+            "memory": {"used_mb": 1120.4, "limit_mb": 4096.0, "percent": 27.3}
         },
         {
-            "id": "c3d4e5f6a1b2",
-            "name": "db-postgresql-16",
+            "id": "ol03c4d5e6f7",
+            "name": "ollama-llm-service",
+            "image": "ollama/ollama:latest",
+            "status": "running",
+            "state": "running",
+            "health": "healthy",
+            "created": "2026-09-10T09:00:00Z",
+            "ports": [
+                {"internal": "11434", "external": "11434", "protocol": "tcp", "display": "11434:11434/tcp", "link_port": "11434"}
+            ],
+            "cpu_percent": round(random.uniform(0.5, 2.0), 1),
+            "memory": {"used_mb": 780.0, "limit_mb": 8192.0, "percent": 9.5}
+        },
+        {
+            "id": "ui04d5e6f7a1",
+            "name": "open-webui",
+            "image": "ghcr.io/open-webui/open-webui:main",
+            "status": "running",
+            "state": "running",
+            "health": "healthy",
+            "created": "2026-09-10T09:05:00Z",
+            "ports": [
+                {"internal": "8080", "external": "3000", "protocol": "tcp", "display": "3000:8080/tcp", "link_port": "3000"}
+            ],
+            "cpu_percent": round(random.uniform(0.6, 1.8), 1),
+            "memory": {"used_mb": 265.8, "limit_mb": 2048.0, "percent": 12.9}
+        },
+        {
+            "id": "n805e6f7a1b2",
+            "name": "n8n-nexotech",
+            "image": "n8nio/n8n:latest",
+            "status": "running",
+            "state": "running",
+            "health": "healthy",
+            "created": "2026-09-10T09:10:00Z",
+            "ports": [
+                {"internal": "5678", "external": "5678", "protocol": "tcp", "display": "5678:5678/tcp", "link_port": "5678"}
+            ],
+            "cpu_percent": round(random.uniform(0.8, 2.3), 1),
+            "memory": {"used_mb": 340.5, "limit_mb": 2048.0, "percent": 16.6}
+        },
+        {
+            "id": "pg06f7a1b2c3",
+            "name": "postgres-db",
             "image": "postgres:16-alpine",
             "status": "running",
             "state": "running",
-            "created": "2026-09-10T09:30:00Z",
+            "health": "healthy",
+            "created": "2026-09-10T07:30:00Z",
             "ports": [
                 {"internal": "5432", "external": "5432", "protocol": "tcp", "display": "5432:5432/tcp", "link_port": "5432"}
             ],
-            "cpu_percent": round(random.uniform(0.8, 2.4), 1),
-            "memory": {"used_mb": 142.0, "limit_mb": 2048.0, "percent": 6.9}
+            "cpu_percent": round(random.uniform(0.4, 1.2), 1),
+            "memory": {"used_mb": 145.0, "limit_mb": 4096.0, "percent": 3.5}
         },
         {
-            "id": "d4e5f6a1b2c3",
-            "name": "redis-cache-layer",
-            "image": "redis:7-alpine",
+            "id": "os07a1b2c3d4",
+            "name": "osiris-portal",
+            "image": "nexotech/osiris:latest",
             "status": "running",
             "state": "running",
-            "created": "2026-09-10T09:30:00Z",
-            "ports": [
-                {"internal": "6379", "external": "6379", "protocol": "tcp", "display": "6379:6379/tcp", "link_port": "6379"}
-            ],
-            "cpu_percent": round(random.uniform(0.1, 0.6), 1),
-            "memory": {"used_mb": 18.4, "limit_mb": 512.0, "percent": 3.6}
-        },
-        {
-            "id": "e5f6a1b2c3d4",
-            "name": "grafana-metrics",
-            "image": "grafana/grafana:latest",
-            "status": "running",
-            "state": "running",
+            "health": "healthy",
             "created": "2026-09-11T12:00:00Z",
             "ports": [
-                {"internal": "3000", "external": "3000", "protocol": "tcp", "display": "3000:3000/tcp", "link_port": "3000"}
+                {"internal": "80", "external": "8080", "protocol": "tcp", "display": "8080:80/tcp", "link_port": "8080"}
             ],
-            "cpu_percent": round(random.uniform(0.4, 1.5), 1),
-            "memory": {"used_mb": 94.6, "limit_mb": 1024.0, "percent": 9.2}
+            "cpu_percent": round(random.uniform(0.3, 1.4), 1),
+            "memory": {"used_mb": 88.0, "limit_mb": 1024.0, "percent": 8.5}
         },
         {
-            "id": "f6a1b2c3d4e5",
-            "name": "worker-batch-etl",
-            "image": "python:3.11-alpine",
-            "status": "exited",
-            "state": "exited",
+            "id": "mc08b2c3d4e5",
+            "name": "mcp-filesystem-server",
+            "image": "node:18-slim",
+            "status": "restarting",
+            "state": "restarting",
+            "health": None,
             "created": "2026-09-11T15:00:00Z",
             "ports": [],
             "cpu_percent": 0.0,
             "memory": {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0}
+        },
+        {
+            "id": "db09c3d4e5f6",
+            "name": "dashboard-monitor",
+            "image": "dashboard-dashboard:latest",
+            "status": "running",
+            "state": "running",
+            "health": "healthy",
+            "created": "2026-09-12T00:00:00Z",
+            "ports": [
+                {"internal": "8090", "external": "8090", "protocol": "tcp", "display": "8090:8090/tcp", "link_port": "8090"}
+            ],
+            "cpu_percent": round(random.uniform(0.2, 0.9), 1),
+            "memory": {"used_mb": 42.1, "limit_mb": 512.0, "percent": 8.2}
         }
     ]
     for c in containers:
@@ -476,6 +584,7 @@ def get_docker_metrics() -> dict:
         image_name = image_tags[0] if image_tags else (c.attrs.get("Config", {}).get("Image") or c.image.short_id)
         health_info = c.attrs.get("State", {}).get("Health", {})
         health_status = health_info.get("Status") if health_info else None
+        ports = parse_ports(c.attrs)
 
         containers_data.append({
             "id": c.short_id,
@@ -531,11 +640,148 @@ def get_docker_metrics() -> dict:
     }
 
 
+def compute_alerts(system: dict, docker: dict) -> dict:
+    """Calcula alertas operacionales críticas y advertencias en base al estado del host y contenedores."""
+    alerts = []
+    
+    # 1. Alertas de CPU del Host
+    cpu_pct = system.get("cpu", {}).get("percent", 0)
+    if cpu_pct >= 90:
+        alerts.append({
+            "id": "alert-cpu-crit",
+            "level": "critical",
+            "source": "Host CPU",
+            "title": "Uso Crítico de CPU",
+            "message": f"El uso global de CPU alcanzó el {cpu_pct:.1f}%. Posible sobrecarga de procesos.",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+    elif cpu_pct >= 75:
+        alerts.append({
+            "id": "alert-cpu-warn",
+            "level": "warning",
+            "source": "Host CPU",
+            "title": "Uso Elevado de CPU",
+            "message": f"El uso de CPU está en {cpu_pct:.1f}%.",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+
+    # 2. Alertas de Memoria RAM
+    mem_pct = system.get("memory", {}).get("percent", 0)
+    if mem_pct >= 90:
+        alerts.append({
+            "id": "alert-mem-crit",
+            "level": "critical",
+            "source": "Host Memoria",
+            "title": "Memoria RAM Crítica",
+            "message": f"La memoria RAM ocupada está al {mem_pct:.1f}%. Riesgo de activación de OOM-killer.",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+    elif mem_pct >= 80:
+        alerts.append({
+            "id": "alert-mem-warn",
+            "level": "warning",
+            "source": "Host Memoria",
+            "title": "Memoria RAM Elevada",
+            "message": f"La memoria RAM ocupada está al {mem_pct:.1f}%.",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+
+    # 3. Alertas de Almacenamiento
+    disk_pct = system.get("disk", {}).get("percent", 0)
+    if disk_pct >= 90:
+        alerts.append({
+            "id": "alert-disk-crit",
+            "level": "critical",
+            "source": "Almacenamiento",
+            "title": "Disco Casi Lleno",
+            "message": f"Espacio en disco ocupado al {disk_pct:.1f}%. Libere espacio inmediatamente.",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+    elif disk_pct >= 80:
+        alerts.append({
+            "id": "alert-disk-warn",
+            "level": "warning",
+            "source": "Almacenamiento",
+            "title": "Espacio en Disco Limitado",
+            "message": f"Espacio en disco ocupado al {disk_pct:.1f}%.",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+
+    # 4. Alertas de Carga del Sistema (Load Average)
+    cores = system.get("cpu", {}).get("cores", 1) or 1
+    load_1m = (system.get("cpu", {}).get("load_avg") or [0])[0]
+    if load_1m > (cores * 2.0):
+        alerts.append({
+            "id": "alert-load-crit",
+            "level": "critical",
+            "source": "Host Load",
+            "title": "Sobrecarga Severa del Sistema",
+            "message": f"Load avg 1min ({load_1m:.2f}) supera el 200% de la capacidad de núcleos ({cores}).",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+    elif load_1m > (cores * 1.2):
+        alerts.append({
+            "id": "alert-load-warn",
+            "level": "warning",
+            "source": "Host Load",
+            "title": "Carga de Sistema Elevada",
+            "message": f"Load avg 1min ({load_1m:.2f}) excede los núcleos físicos disponibles ({cores}).",
+            "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        })
+
+    # 5. Alertas de Contenedores Docker
+    for c in docker.get("containers", []):
+        c_name = c.get("name", "Contenedor")
+        c_status = (c.get("status") or "").lower()
+        c_health = (c.get("health") or "").lower()
+        cat = (c.get("service_info") or {}).get("category", "")
+
+        if c_health == "unhealthy":
+            alerts.append({
+                "id": f"alert-{c.get('id', c_name)}-unhealthy",
+                "level": "critical",
+                "source": "Docker Container",
+                "title": f"Salud Comprometida: {c_name}",
+                "message": f"El healthcheck de '{c_name}' falló repetidamente (UNHEALTHY). Requiere verificación.",
+                "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            })
+
+        if c_status == "restarting":
+            alerts.append({
+                "id": f"alert-{c.get('id', c_name)}-restart",
+                "level": "warning",
+                "source": "Docker Container",
+                "title": f"Bucle de Reinicio: {c_name}",
+                "message": f"El contenedor '{c_name}' está en un ciclo inestable de reinicios continuos.",
+                "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            })
+        elif c_status in ["dead", "exited"] and cat in ["security", "database", "ai", "logging"]:
+            alerts.append({
+                "id": f"alert-{c.get('id', c_name)}-stopped",
+                "level": "warning",
+                "source": "Docker Container",
+                "title": f"Servicio Esencial Detenido: {c_name}",
+                "message": f"El servicio crítico '{c_name}' ({cat.upper()}) está detenido.",
+                "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            })
+
+    critical_count = sum(1 for a in alerts if a["level"] == "critical")
+    warning_count = sum(1 for a in alerts if a["level"] == "warning")
+
+    return {
+        "critical_count": critical_count,
+        "warning_count": warning_count,
+        "total_count": len(alerts),
+        "items": alerts
+    }
+
+
 def get_full_metrics() -> dict:
     """Retorna el paquete consolidado de métricas de host, Docker y servicios autodetectados."""
     sys = get_system_metrics()
     doc = get_docker_metrics()
     host_services = scan_host_listening_services()
+    alerts = compute_alerts(sys, doc)
 
     # Consolidar escaneo de servicios web detectados (tanto de Docker como de Host)
     discovered_services = []
@@ -588,5 +834,6 @@ def get_full_metrics() -> dict:
         "system": sys,
         "docker": doc,
         "host_services": host_services,
-        "discovered_services": discovered_services
+        "discovered_services": discovered_services,
+        "alerts": alerts
     }
