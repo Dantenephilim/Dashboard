@@ -12,10 +12,12 @@ services:
       - PORT=8090
       - TZ=UTC
     volumes:
-      # Socket de Docker en modo solo lectura para escanear contenedores y métricas
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Socket de Docker con permisos para escanear, reiniciar y apagar contenedores
+      - /var/run/docker.sock:/var/run/docker.sock
       # Montaje para lectura precisa del disco del host
       - /:/host:ro
+      # Montaje de /proc del host para escanear puertos de Apache, Nessus y servicios nativos
+      - /proc:/host/proc:ro
       # Montaje para detectar versión de Ubuntu Server y Hostname
       - /etc/os-release:/etc/host-os-release:ro
       - /etc/hostname:/etc/host_hostname:ro

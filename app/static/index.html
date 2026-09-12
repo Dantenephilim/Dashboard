@@ -135,6 +135,12 @@
           <span id="update-indicator" class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
           <span id="btn-update-label">v2.0 Sync</span>
         </button>
+
+        <!-- GitHub Direct Link Button -->
+        <a href="https://github.com/Dantenephilim/Dashboard" target="_blank" rel="noopener noreferrer" title="Ver repositorio en GitHub" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500/80 font-mono text-[11px] transition">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span class="hidden sm:inline">GitHub ↗</span>
+        </a>
       </div>
     </header>
 
@@ -449,7 +455,7 @@
       <div class="flex items-center gap-3">
         <span class="hidden sm:inline text-slate-500">Latencia: &lt;5ms</span>
         <div class="flex items-center gap-1 cursor-pointer hover:text-cyan-400 transition" onclick="triggerManualRefresh()" title="Refrescar ahora">
-          <span>Refresh: 2s</span>
+          <span>Refresh: 1s (Live)</span>
           <svg id="refresh-icon" class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </div>
       </div>
@@ -508,9 +514,23 @@
       Cargando registros...
     </div>
 
-    <div class="flex items-center justify-between px-4 py-2 border-t border-slate-800 bg-slate-900/50 text-xs font-mono">
-      <span class="text-slate-500">Últimas 120 líneas • Salida estándar</span>
-      <button onclick="closeModal('modal-logs')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-t border-slate-800 bg-slate-900/80 text-xs font-mono">
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400 text-[11px]">Acciones:</span>
+        <button onclick="actionFromModalLogs('start')" title="Iniciar contenedor" class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 hover:bg-emerald-900 text-emerald-300 transition text-[10px] font-bold">
+          ▶ Iniciar
+        </button>
+        <button onclick="actionFromModalLogs('restart')" title="Reiniciar contenedor" class="px-2 py-0.5 rounded bg-slate-900 border border-amber-500 hover:bg-amber-950 text-amber-300 transition text-[10px] font-bold">
+          🔄 Reiniciar
+        </button>
+        <button onclick="actionFromModalLogs('stop')" title="Apagar contenedor" class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 hover:bg-rose-900 text-rose-300 transition text-[10px] font-bold">
+          ⏹ Apagar
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-500 text-[10px] hidden sm:inline">Últimas 120 líneas</span>
+        <button onclick="closeModal('modal-logs')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+      </div>
     </div>
   </dialog>
 
@@ -569,12 +589,40 @@
         </div>
       </div>
 
-      <div class="text-[11px] text-slate-300">
-        Para aplicar la última versión en tu servidor Ubuntu Server, ejecuta:
+      <!-- Botones de Acción de Actualización -->
+      <div class="flex flex-col gap-2">
+        <button id="btn-apply-update" onclick="applyGitHubUpdate()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold font-mono text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span id="btn-apply-update-text">Actualizar directo desde GitHub 🚀</span>
+        </button>
+
+        <a href="https://github.com/Dantenephilim/Dashboard" target="_blank" rel="noopener noreferrer" class="w-full py-1.5 px-3 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-mono text-[11px] flex items-center justify-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>Abrir repositorio en GitHub ↗</span>
+        </a>
+      </div>
+
+      <!-- Estado de progreso de actualización -->
+      <div id="update-progress-box" class="hidden flex flex-col gap-1.5 p-3 rounded bg-cyan-950/40 border border-cyan-500/40 text-cyan-300">
+        <div class="flex items-center justify-between font-bold">
+          <span class="flex items-center gap-2">
+            <span class="animate-spin text-sm">🔄</span>
+            <span id="update-progress-title">Actualizando sistema...</span>
+          </span>
+          <span id="update-countdown" class="font-mono text-xs">15s</span>
+        </div>
+        <p id="update-progress-msg" class="text-[10px] text-slate-300">Descargando últimos cambios desde GitHub y reconstruyendo contenedor...</p>
+        <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden mt-1">
+          <div id="update-progress-bar" class="bg-cyan-400 h-full transition-all duration-1000" style="width: 10%;"></div>
+        </div>
+      </div>
+
+      <div class="text-[11px] text-slate-300 mt-1">
+        O ejecuta manualmente este comando en tu terminal de Ubuntu:
       </div>
 
       <div class="bg-black/80 border border-slate-700/80 rounded p-2.5 flex items-center justify-between">
-        <code id="cmd-update" class="text-emerald-400 select-all font-mono text-[11px]">cd ~/Dashboard && git pull && sudo bash install.sh</code>
+        <code id="cmd-update" class="text-emerald-400 select-all font-mono text-[11px]">cd ~/Dashboard && sudo bash update.sh</code>
         <button onclick="copyUpdateCommand()" title="Copiar comando" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         </button>
@@ -1074,10 +1122,29 @@
                 ${waveSvg}
               </div>
 
-              <!-- LOGS button -->
-              <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
-                LOGS
-              </button>
+              <!-- Actions Group (Start / Stop / Restart / Logs) -->
+              <div class="flex items-center gap-1">
+                ${isRunning ? `
+                  <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  </button>
+                  <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}')" title="Apagar / Detener contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-400 transition" aria-label="Detener">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
+                  </button>
+                ` : `
+                  <button onclick="performContainerAction('${c.id}', 'start', '${c.name}')" title="Iniciar contenedor" class="p-1 rounded bg-emerald-950 border border-emerald-600 hover:border-emerald-400 text-emerald-300 hover:text-white transition" aria-label="Iniciar">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                  <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  </button>
+                `}
+
+                <!-- LOGS button -->
+                <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
+                  LOGS
+                </button>
+              </div>
             </div>
 
           </div>
@@ -1151,6 +1218,115 @@
       } catch (e) {
         alert(`Error al reiniciar: ${e.message}`);
       }
+    }
+
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const el = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-950/95 border-emerald-500 text-emerald-200' :
+                 type === 'error' ? 'bg-rose-950/95 border-rose-500 text-rose-200' :
+                 'bg-slate-900/95 border-cyan-500 text-cyan-200';
+      el.className = `pointer-events-auto border rounded px-3 py-2 text-xs font-mono shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${bg}`;
+      el.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '⚠' : 'ℹ'}</span><span>${message}</span>`;
+      container.appendChild(el);
+      requestAnimationFrame(() => {
+        el.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => el.remove(), 300);
+      }, 4000);
+    }
+
+    // Individual Container Action (start, stop, restart)
+    async function performContainerAction(containerId, action, containerName) {
+      const verb = action === 'start' ? 'iniciar' : action === 'stop' ? 'apagar / detener' : 'reiniciar';
+      if (!confirm(`¿Estás seguro de que deseas ${verb} el contenedor "${containerName || containerId}"?`)) {
+        return;
+      }
+      try {
+        showToast(`Ejecutando ${verb} en ${containerName || containerId}...`, 'info');
+        const res = await fetch(`/api/containers/${containerId}/${action}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok && data.status !== 'error') {
+          showToast(data.message || `Acción '${action}' completada.`, 'success');
+          triggerManualRefresh();
+        } else {
+          showToast(data.message || `Error al ${verb}: verifique permisos en docker.sock`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error de red al ${verb}: ${err.message}`, 'error');
+      }
+    }
+
+    async function actionFromModalLogs(action) {
+      if (!currentLogsContainerId) return;
+      const title = document.getElementById('modal-logs-title').textContent;
+      await performContainerAction(currentLogsContainerId, action, title);
+      setTimeout(refreshCurrentLogs, 1500);
+    }
+
+    // Apply GitHub Update with 1 Click
+    async function applyGitHubUpdate() {
+      const btn = document.getElementById('btn-apply-update');
+      const text = document.getElementById('btn-apply-update-text');
+      const box = document.getElementById('update-progress-box');
+      const bar = document.getElementById('update-progress-bar');
+      const countdown = document.getElementById('update-countdown');
+      const msg = document.getElementById('update-progress-msg');
+
+      if (!confirm('¿Deseas descargar la última versión de GitHub y actualizar el contenedor ahora?')) {
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-60', 'cursor-not-allowed');
+      }
+      if (text) text.textContent = 'Iniciando actualización...';
+      if (box) box.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/updates/apply', { method: 'POST' });
+        const data = await res.json();
+
+        let timeLeft = 18;
+        if (bar) bar.style.width = '25%';
+        if (msg) msg.textContent = data.message || 'Descargando cambios y reconstruyendo contenedor...';
+
+        const timer = setInterval(() => {
+          timeLeft--;
+          if (countdown) countdown.textContent = `${timeLeft}s`;
+          const pct = Math.min(95, 25 + ((18 - timeLeft) / 18) * 70);
+          if (bar) bar.style.width = `${pct}%`;
+
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            if (msg) msg.textContent = '¡Listo! Recargando dashboard...';
+            if (bar) bar.style.width = '100%';
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          }
+        }, 1000);
+
+      } catch (err) {
+        if (msg) msg.textContent = `Error al actualizar: ${err.message}. Puedes usar el comando manual.`;
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
+        if (text) text.textContent = 'Reintentar actualización 🚀';
+      }
+    }
+
+    function copyUpdateCommand() {
+      const cmd = "cd ~/Dashboard && sudo bash update.sh";
+      navigator.clipboard.writeText(cmd).then(() => {
+        showToast("Comando copiado: cd ~/Dashboard && sudo bash update.sh", "success");
+      });
     }
 
     // =========================================================================
@@ -1365,16 +1541,19 @@
       // 2. Conectar WebSocket para tiempo real
       connectWebSocket();
 
-      // 3. Fallback continuo cada 2 segundos si WebSocket se desconecta
+      // 3. Fallback continuo cada 1 segundo si WebSocket se desconecta (ultra tiempo real)
       setInterval(() => {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
           fetchMetricsHTTP();
         }
-      }, 2000);
+      }, 1000);
 
       // 4. Comprobar actualizaciones
       checkUpdates();
     });
   </script>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-12 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>

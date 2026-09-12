@@ -7,8 +7,9 @@ from datetime import datetime, timezone
 import psutil
 import docker
 
-# Initialize Docker client
+# Initialize Docker client and hot cache
 _docker_client = None
+_container_stats_cache = {}
 
 def get_docker_client():
     global _docker_client
@@ -63,22 +64,28 @@ def get_detailed_os() -> str:
 
 
 KNOWN_PORT_SERVICES = {
+    21: ("FTP File Transfer", "system", "📁"),
     22: ("SSH Remote Access", "system", "🔐"),
     53: ("DNS Server", "network", "🌐"),
-    80: ("HTTP Web Server", "web", "🌍"),
-    443: ("HTTPS Web Server", "web", "🔒"),
-    3000: ("Web App / Dashboard", "web", "📊"),
-    3306: ("MySQL Database", "database", "🗄️"),
+    80: ("Apache / HTTP Web Server", "web", "🪶"),
+    443: ("Apache / HTTPS Web Server", "web", "🔒"),
+    3000: ("Node.js / Web App", "web", "📊"),
+    3306: ("MySQL / MariaDB Database", "database", "🐬"),
     5000: ("Flask / Docker Registry", "web", "🚀"),
     5432: ("PostgreSQL Database", "database", "🐘"),
+    5678: ("n8n Workflow Automation", "ai", "⚡"),
     6379: ("Redis In-Memory Cache", "database", "⚡"),
     8000: ("FastAPI / Web App", "web", "⚡"),
     8080: ("HTTP Proxy / Alt Web", "web", "🌐"),
     8090: ("Monitor Dashboard Web", "web", "🖥️"),
     8443: ("HTTPS Alt Web", "web", "🔒"),
+    8834: ("Nessus Scanner Web", "security", "🛡️"),
+    8888: ("Jupyter / Web App", "web", "🪐"),
     9000: ("Portainer / Management", "monitoring", "🐳"),
-    9090: ("Prometheus Metrics", "monitoring", "📈"),
+    9090: ("Prometheus / Cockpit", "monitoring", "📈"),
     9443: ("Portainer HTTPS", "monitoring", "🐳"),
+    10000: ("Webmin Admin Panel", "system", "⚙️"),
+    11434: ("Ollama AI LLM Service", "ai", "🦙"),
     27017: ("MongoDB Database", "database", "🍃"),
 }
 
@@ -89,7 +96,11 @@ def categorize_service(image_name: str, name: str) -> dict:
     name_lower = (name or "").lower()
     combined = f"{image_lower} {name_lower}"
 
-    if "wazuh" in combined:
+    if "nessus" in combined:
+        return {"category": "security", "label": "Nessus Scanner", "badge_color": "amber", "icon": "🛡️"}
+    elif "apache" in combined or "httpd" in combined:
+        return {"category": "web", "label": "Apache Web Server", "badge_color": "rose", "icon": "🪶"}
+    elif "wazuh" in combined:
         return {"category": "security", "label": "Wazuh SIEM", "badge_color": "blue", "icon": "🛡️"}
     elif "graylog" in combined:
         return {"category": "logging", "label": "Graylog Logs", "badge_color": "orange", "icon": "📜"}
@@ -107,7 +118,7 @@ def categorize_service(image_name: str, name: str) -> dict:
         return {"category": "database", "label": "Base de Datos", "badge_color": "indigo", "icon": "🐘" if "postgres" in combined else "🗄️"}
     elif any(k in combined for k in ["grafana", "prometheus", "netdata", "portainer", "uptime-kuma", "loki", "jaeger", "cadvisor", "dozzle"]):
         return {"category": "monitoring", "label": "Monitoreo", "badge_color": "emerald", "icon": "📊"}
-    elif any(k in combined for k in ["nginx", "apache", "caddy", "traefik", "node", "next", "vue", "react", "fastapi", "flask", "django", "wordpress", "ghost"]):
+    elif any(k in combined for k in ["nginx", "caddy", "traefik", "node", "next", "vue", "react", "fastapi", "flask", "django", "wordpress", "ghost"]):
         return {"category": "web", "label": "Servicio Web", "badge_color": "sky", "icon": "🌐"}
     elif any(k in combined for k in ["nextcloud", "owncloud", "minio", "s3", "seafile", "syncthing"]):
         return {"category": "storage", "label": "Cloud / Storage", "badge_color": "amber", "icon": "☁️"}
@@ -119,11 +130,40 @@ def categorize_service(image_name: str, name: str) -> dict:
         return {"category": "general", "label": "Aplicación", "badge_color": "zinc", "icon": "📦"}
 
 
+def parse_proc_net_tcp_ports() -> set:
+    """Lee sockets en escucha (estado 0A = TCP_LISTEN) directamente desde el host Ubuntu."""
+    ports = set()
+    candidate_files = [
+        '/host/proc/net/tcp',
+        '/host/proc/net/tcp6',
+        '/proc/net/tcp',
+        '/proc/net/tcp6'
+    ]
+    for p in candidate_files:
+        if os.path.exists(p):
+            try:
+                with open(p, 'r', encoding='utf-8') as f:
+                    for line in f.readlines()[1:]:
+                        parts = line.strip().split()
+                        # parts[3] es el estado ('0A' == TCP_LISTEN)
+                        if len(parts) >= 4 and parts[3] == '0A':
+                            local_addr = parts[1]
+                            if ':' in local_addr:
+                                port_hex = local_addr.split(':')[1]
+                                port_dec = int(port_hex, 16)
+                                if 1 <= port_dec <= 65535:
+                                    ports.add(port_dec)
+            except Exception:
+                pass
+    return ports
+
+
 def scan_host_listening_services() -> list:
-    """Escanea automáticamente los puertos TCP en escucha en el servidor."""
+    """Escanea automáticamente los puertos TCP en escucha en el servidor (Apache, Nessus y cualquier puerto nuevo)."""
     discovered = []
     seen_ports = set()
     
+    # 1. Escaneo vía psutil (si tiene permisos)
     try:
         connections = psutil.net_connections(kind='tcp')
         for conn in connections:
@@ -146,10 +186,10 @@ def scan_host_listening_services() -> list:
 
                 known = KNOWN_PORT_SERVICES.get(port)
                 service_desc = known[0] if known else f"Servicio en puerto {port}"
-                category = known[1] if known else "general"
-                icon = known[2] if known else "🔌"
+                category = known[1] if known else "web"
+                icon = known[2] if known else "🌐"
 
-                is_web = port in [80, 443, 3000, 5000, 8000, 8080, 8090, 8443, 9000, 9443] or category in ["web", "monitoring"]
+                is_web = port in [80, 443, 3000, 5000, 8000, 8080, 8090, 8443, 8834, 8888, 9000, 9443] or category in ["web", "monitoring", "security"]
 
                 discovered.append({
                     "port": port,
@@ -162,6 +202,35 @@ def scan_host_listening_services() -> list:
                     "icon": icon,
                     "is_web": is_web,
                     "link_port": port if is_web else None
+                })
+    except Exception:
+        pass
+
+    # 2. Escaneo complementario vía /proc/net/tcp del host (detecta Apache, Nessus o sitios nuevos sin restricciones)
+    try:
+        host_ports = parse_proc_net_tcp_ports()
+        for port in sorted(host_ports):
+            if port not in seen_ports:
+                seen_ports.add(port)
+                known = KNOWN_PORT_SERVICES.get(port)
+                if known:
+                    desc, cat, ico = known[0], known[1], known[2]
+                else:
+                    desc = f"Servicio Web / Puerto {port}"
+                    cat = "web"
+                    ico = "🌐"
+
+                discovered.append({
+                    "port": port,
+                    "bind_ip": "0.0.0.0",
+                    "protocol": "TCP",
+                    "pid": None,
+                    "process": "Host Service",
+                    "description": desc,
+                    "category": cat,
+                    "icon": ico,
+                    "is_web": True,
+                    "link_port": port
                 })
     except Exception:
         pass
@@ -655,37 +724,38 @@ def get_docker_metrics() -> dict:
         except Exception:
             continue
 
-    # Consulta concurrente de estadísticas con timeout protegido
+    # Consulta concurrente de estadísticas con timeout protegido (0.8s) y caché en caliente
     stats_map = {}
     if running_containers_to_stat:
         try:
-            with ThreadPoolExecutor(max_workers=min(8, len(running_containers_to_stat))) as executor:
+            with ThreadPoolExecutor(max_workers=min(16, len(running_containers_to_stat))) as executor:
                 future_to_id = {
                     executor.submit(fetch_container_stats, c): getattr(c, 'short_id', getattr(c, 'name', 'unknown'))
                     for c in running_containers_to_stat
                 }
                 try:
-                    for future in as_completed(future_to_id, timeout=2.0):
+                    for future in as_completed(future_to_id, timeout=0.8):
                         cid = future_to_id[future]
                         try:
-                            stats_map[cid] = future.result()
+                            res = future.result()
+                            stats_map[cid] = res
+                            _container_stats_cache[cid] = res
                         except Exception:
-                            stats_map[cid] = {
-                                "cpu_percent": 0.0,
-                                "memory": {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0}
-                            }
+                            pass
                 except Exception:
-                    # TimeoutError de as_completed no interrumpe el dashboard
                     pass
         except Exception:
             pass
 
-    # Integrar estadísticas obtenidas
+    # Integrar estadísticas obtenidas con fallback instantáneo a caché (sin parpadeos ni delay)
     for c_info in containers_data:
         cid = c_info["id"]
         if cid in stats_map:
             c_info["cpu_percent"] = stats_map[cid].get("cpu_percent", 0.0)
             c_info["memory"] = stats_map[cid].get("memory", {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0})
+        elif cid in _container_stats_cache:
+            c_info["cpu_percent"] = _container_stats_cache[cid].get("cpu_percent", 0.0)
+            c_info["memory"] = _container_stats_cache[cid].get("memory", {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0})
 
     # Ordenar: primero los activos, luego alfabéticamente
     containers_data.sort(key=lambda x: (x["status"].lower() != "running", x["name"].lower()))
@@ -935,3 +1005,38 @@ def get_full_metrics() -> dict:
         "discovered_services": discovered_services,
         "alerts": alerts
     }
+
+
+def container_action(container_id: str, action: str) -> dict:
+    """Ejecuta start, stop o restart sobre un contenedor Docker de forma segura."""
+    client = get_docker_client()
+    if not client:
+        try:
+            client = docker.from_env(timeout=3)
+            client.ping()
+            global _docker_client
+            _docker_client = client
+        except Exception:
+            return {"status": "error", "message": "Docker daemon no accesible o permisos insuficientes en docker.sock."}
+
+    try:
+        container = client.containers.get(container_id)
+        name = getattr(container, 'name', container_id)
+
+        if action == "start":
+            container.start()
+            return {"status": "ok", "action": "start", "container": name, "message": f"Contenedor '{name}' iniciado exitosamente."}
+        elif action == "stop":
+            container.stop(timeout=10)
+            return {"status": "ok", "action": "stop", "container": name, "message": f"Contenedor '{name}' detenido correctamente."}
+        elif action == "restart":
+            container.restart(timeout=10)
+            return {"status": "ok", "action": "restart", "container": name, "message": f"Contenedor '{name}' reiniciado correctamente."}
+        else:
+            return {"status": "error", "message": f"Acción '{action}' inválida. Use start, stop o restart."}
+    except docker.errors.NotFound:
+        return {"status": "error", "message": f"Contenedor '{container_id}' no encontrado en Docker."}
+    except docker.errors.APIError as e:
+        return {"status": "error", "message": f"Error de Docker: {getattr(e, 'explanation', str(e))}"}
+    except Exception as e:
+        return {"status": "error", "message": f"Error al ejecutar '{action}': {str(e)}"}

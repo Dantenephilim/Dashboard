@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.monitor import get_full_metrics, get_system_metrics, get_docker_metrics, get_docker_client
+from app.monitor import get_full_metrics, get_system_metrics, get_docker_metrics, get_docker_client, container_action
 
 # Configuración de logs
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -39,7 +39,7 @@ app.add_middleware(
 # Montar archivos estáticos
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# Buffer circular para el historial de métricas (últimos 30 puntos = ~60 segundos)
+# Buffer circular para el historial de métricas (últimos 30 puntos = ~30 segundos en tiempo real)
 HISTORY_MAX_POINTS = 30
 metrics_history = deque(maxlen=HISTORY_MAX_POINTS)
 
@@ -69,9 +69,9 @@ async def broadcast_metrics(payload: dict):
 
 
 async def metrics_collector_loop():
-    """Bucle en segundo plano que recolecta métricas cada 2 segundos."""
+    """Bucle en segundo plano que recolecta métricas cada 1 segundo (ultra tiempo real sin delay)."""
     global latest_metrics
-    logger.info("Iniciando bucle de recolección de métricas cada 2s...")
+    logger.info("Iniciando bucle de recolección de métricas cada 1s...")
     
     while True:
         try:
@@ -99,7 +99,7 @@ async def metrics_collector_loop():
         except Exception as e:
             logger.error(f"Error en metrics_collector_loop: {e}", exc_info=True)
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
 
 @app.on_event("startup")
@@ -172,18 +172,31 @@ async def api_container_logs(container_id: str, tail: int = 120):
         return JSONResponse(status_code=500, content={"error": f"Error al leer logs: {str(e)}"})
 
 
+@app.post("/api/containers/{container_id}/start")
+async def api_container_start(container_id: str):
+    """Inicia un contenedor específico."""
+    res = await asyncio.to_thread(container_action, container_id, "start")
+    if res.get("status") == "error":
+        return JSONResponse(status_code=500, content=res)
+    return res
+
+
+@app.post("/api/containers/{container_id}/stop")
+async def api_container_stop(container_id: str):
+    """Detiene/apaga un contenedor específico."""
+    res = await asyncio.to_thread(container_action, container_id, "stop")
+    if res.get("status") == "error":
+        return JSONResponse(status_code=500, content=res)
+    return res
+
+
 @app.post("/api/containers/{container_id}/restart")
 async def api_container_restart(container_id: str):
     """Reinicia un contenedor específico."""
-    client = get_docker_client()
-    if not client:
-        return {"success": True, "message": f"[DEMO] Contenedor {container_id} reiniciado correctamente (simulado)"}
-    try:
-        container = client.containers.get(container_id)
-        container.restart(timeout=10)
-        return {"success": True, "message": f"Contenedor '{container.name}' reiniciado exitosamente"}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Fallo al reiniciar: {str(e)}"})
+    res = await asyncio.to_thread(container_action, container_id, "restart")
+    if res.get("status") == "error":
+        return JSONResponse(status_code=500, content=res)
+    return res
 
 
 @app.post("/api/containers/restart-all")
@@ -252,6 +265,32 @@ def check_github_updates() -> dict:
 async def api_updates():
     """Verifica si hay actualizaciones disponibles en GitHub."""
     return await asyncio.to_thread(check_github_updates)
+
+
+@app.post("/api/updates/apply")
+async def api_apply_update():
+    """Descarga los últimos cambios de GitHub y dispara la actualización del contenedor."""
+    import subprocess
+    try:
+        update_script = BASE_DIR.parent / "update.sh"
+        if update_script.exists():
+            subprocess.Popen(["bash", str(update_script)], cwd=str(BASE_DIR.parent))
+            return {
+                "status": "ok",
+                "message": "Actualización desde GitHub iniciada. El contenedor se reconstruirá en segundo plano."
+            }
+
+        subprocess.Popen(
+            ["sh", "-c", "git fetch origin main && git reset --hard origin/main"],
+            cwd=str(BASE_DIR.parent)
+        )
+        return {
+            "status": "ok",
+            "message": "Actualización descargada desde GitHub. Reiniciando servicio..."
+        }
+    except Exception as e:
+        logger.error(f"Error al aplicar actualización: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
 
 @app.get("/api/ping")
