@@ -1,4 +1,4 @@
 """
-Dashboard de monitoreo para Servidor Ubuntu y Docker
+Dashboard de Monitoreo para Servidor Ubuntu y Docker
 """
-__version__ = "1.0.0"
+__version__ = "1.1.0"

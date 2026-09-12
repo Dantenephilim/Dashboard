@@ -73,6 +73,12 @@
           <span id="ws-text" class="text-zinc-400">Conectando...</span>
         </div>
 
+        <!-- Updates System Button -->
+        <button id="btn-updates" title="Estado de actualizaciones del sistema" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 hover:bg-zinc-850 text-zinc-300 border border-zinc-800 transition">
+          <span id="update-dot" class="h-2 w-2 rounded-full bg-emerald-400"></span>
+          <span id="update-text" class="font-mono text-[11px]">v1.1.0</span>
+        </button>
+
         <!-- Clock / Last Update -->
         <div class="text-xs text-zinc-500 font-mono hidden md:block">
           Actualizado: <span id="last-update" class="text-zinc-300">--:--:--</span>
@@ -288,12 +294,23 @@
             <button data-filter="stopped" class="filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition">Detenidos</button>
           </div>
 
+          <!-- Category Filter Dropdown -->
+          <select id="category-filter" class="bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500/80 transition font-medium cursor-pointer">
+            <option value="all">Todas las Categorías</option>
+            <option value="security">🛡️ Seguridad / SIEM (Wazuh)</option>
+            <option value="logging">📜 Logs (Graylog)</option>
+            <option value="ai">🧠 IA & Auto (Ollama/n8n/WebUI)</option>
+            <option value="database">🗄️ Bases de Datos (PostgreSQL)</option>
+            <option value="web">🌐 Apps Web (Osiris/Nginx)</option>
+            <option value="mcp">🔌 Servidores MCP</option>
+          </select>
+
           <!-- Search Input -->
           <div class="relative min-w-[200px]">
             <svg class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
             </svg>
-            <input type="text" id="container-search" placeholder="Buscar contenedor o puerto..." 
+            <input type="text" id="container-search" placeholder="Buscar por nombre, imagen o puerto..." 
                    class="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-3 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition">
           </div>
         </div>
@@ -331,6 +348,61 @@
 
   </main>
 
+  <!-- Modal del Sistema de Actualizaciones -->
+  <div id="modal-updates" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden transition-opacity">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 m-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-white tracking-tight">Sistema de Actualizaciones</h3>
+            <p class="text-xs text-zinc-400">Dashboard de Monitoreo Ubuntu</p>
+          </div>
+        </div>
+        <button id="close-modal-updates" class="text-zinc-400 hover:text-white text-xl p-1 leading-none">&times;</button>
+      </div>
+
+      <div class="bg-zinc-950 rounded-xl p-4 border border-zinc-800 space-y-3 font-mono text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-zinc-500 font-sans">Versión en ejecución:</span>
+          <span id="modal-curr-version" class="text-zinc-200 font-bold">v1.1.0</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-zinc-500 font-sans">Último commit GitHub:</span>
+          <span id="modal-latest-commit" class="text-emerald-400 font-bold">Comprobando...</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-zinc-500 font-sans">Estado:</span>
+          <span id="modal-status-badge" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[11px] font-sans">Al día</span>
+        </div>
+        <p id="modal-latest-msg" class="text-[11px] text-zinc-400 font-sans border-t border-zinc-900 pt-2"></p>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-medium text-zinc-300">Para actualizar tu servidor ejecuta:</label>
+        <div class="flex items-center justify-between bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
+          <code id="update-cmd-text" class="text-xs text-emerald-400 font-mono select-all">sudo bash update.sh</code>
+          <button id="btn-copy-update-cmd" class="text-xs text-zinc-400 hover:text-white px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 transition border border-zinc-700/60">
+            Copiar
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button id="btn-check-updates-now" class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Comprobar actualizaciones en GitHub</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="max-w-7xl mx-auto px-4 sm:px-6 py-6 border-t border-zinc-900 text-center text-xs text-zinc-600">
     Dashboard de Monitoreo Ligero &bull; FastAPI + WebSockets + Tailwind &bull; Actualización continua
@@ -344,6 +416,7 @@
       docker: { available: false, containers: [] }
     };
     let currentFilter = 'all';
+    let currentCategory = 'all';
     let searchQuery = '';
     let cpuChart = null;
     let ramChart = null;
@@ -595,11 +668,19 @@
     }
 
     function renderContainersList(containers) {
-      // Filter by tab and search
+      // Filter by tab, category and search
       const filtered = containers.filter(c => {
-        const isRunning = c.status.toLowerCase() === 'running';
+        const statusLower = (c.status || '').toLowerCase();
+        const stateLower = (c.state || '').toLowerCase();
+        const isRunning = statusLower === 'running';
+
         if (currentFilter === 'running' && !isRunning) return false;
         if (currentFilter === 'stopped' && isRunning) return false;
+
+        if (currentCategory !== 'all') {
+          const cat = (c.service_info && c.service_info.category) ? c.service_info.category : 'general';
+          if (cat !== currentCategory) return false;
+        }
 
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
@@ -622,18 +703,45 @@
       const currentHostname = window.location.hostname || 'localhost';
 
       const rowsHtml = filtered.map(c => {
-        const isRunning = c.status.toLowerCase() === 'running';
+        const statusLower = (c.status || '').toLowerCase();
+        const stateLower = (c.state || '').toLowerCase();
+        const isRunning = statusLower === 'running';
+        const isRestarting = statusLower.includes('restarting') || stateLower.includes('restarting');
 
         // Status Indicator
-        const statusBadge = isRunning
-          ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        let statusBadge = '';
+        if (isRestarting) {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+               <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
+               Restarting
+             </span>`;
+        } else if (isRunning) {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-slow shadow-sm shadow-emerald-400"></span>
                Up
-             </span>`
-          : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+             </span>`;
+        } else {
+          statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
                Exited
              </span>`;
+        }
+
+        // Health indicator
+        let healthBadge = '';
+        if (c.health === 'healthy') {
+          healthBadge = `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 font-mono">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Saludable
+          </span>`;
+        } else if (c.health === 'unhealthy') {
+          healthBadge = `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-500/30 font-mono animate-pulse">
+            <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span> No saludable
+          </span>`;
+        } else if (c.health === 'starting') {
+          healthBadge = `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-500/30 font-mono">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span> Iniciando
+          </span>`;
+        }
 
         // Ports rendering with direct clickable link
         let portsHtml = '<span class="text-zinc-500 font-mono text-[11px]">-</span>';
@@ -664,7 +772,10 @@
           <tr class="hover:bg-zinc-850/40 transition">
             <!-- Status -->
             <td class="py-3 px-4 whitespace-nowrap">
-              ${statusBadge}
+              <div class="flex flex-col items-start gap-1">
+                ${statusBadge}
+                ${healthBadge}
+              </div>
             </td>
 
             <!-- Name & ID -->
@@ -935,6 +1046,17 @@
         });
       });
 
+      // Category filter dropdown
+      const categoryFilter = document.getElementById('category-filter');
+      if (categoryFilter) {
+        categoryFilter.addEventListener('change', (e) => {
+          currentCategory = e.target.value;
+          if (fullState.docker) {
+            renderContainersList(fullState.docker.containers || []);
+          }
+        });
+      }
+
       // Refresh button
       document.getElementById('btn-refresh').addEventListener('click', () => {
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -943,14 +1065,118 @@
           fetchMetricsHTTP();
         }
       });
+
+      // Updates Modal Events
+      const modalUpdates = document.getElementById('modal-updates');
+      const btnUpdates = document.getElementById('btn-updates');
+      const closeUpdates = document.getElementById('close-modal-updates');
+      const btnCopyCmd = document.getElementById('btn-copy-update-cmd');
+      const btnCheckUpdatesNow = document.getElementById('btn-check-updates-now');
+
+      if (btnUpdates) {
+        btnUpdates.addEventListener('click', () => {
+          if (modalUpdates) modalUpdates.classList.remove('hidden');
+          checkUpdates();
+        });
+      }
+
+      if (closeUpdates) {
+        closeUpdates.addEventListener('click', () => {
+          if (modalUpdates) modalUpdates.classList.add('hidden');
+        });
+      }
+
+      if (modalUpdates) {
+        modalUpdates.addEventListener('click', (e) => {
+          if (e.target === modalUpdates) modalUpdates.classList.add('hidden');
+        });
+      }
+
+      if (btnCopyCmd) {
+        btnCopyCmd.addEventListener('click', () => {
+          const cmdText = document.getElementById('update-cmd-text').textContent;
+          navigator.clipboard.writeText(cmdText).then(() => {
+            btnCopyCmd.textContent = '¡Copiado!';
+            btnCopyCmd.className = 'text-xs text-emerald-400 font-bold px-2.5 py-1 rounded bg-zinc-900 border border-emerald-500/40 transition';
+            setTimeout(() => {
+              btnCopyCmd.textContent = 'Copiar';
+              btnCopyCmd.className = 'text-xs text-zinc-400 hover:text-white px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 transition border border-zinc-700/60';
+            }, 2000);
+          }).catch(() => {
+            alert('Copia el comando: ' + cmdText);
+          });
+        });
+      }
+
+      if (btnCheckUpdatesNow) {
+        btnCheckUpdatesNow.addEventListener('click', () => {
+          btnCheckUpdatesNow.innerHTML = '<span>Comprobando en GitHub...</span>';
+          checkUpdates().finally(() => {
+            setTimeout(() => {
+              btnCheckUpdatesNow.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Comprobar actualizaciones en GitHub</span>
+              `;
+            }, 1000);
+          });
+        });
+      }
+    }
+
+    // Check updates via API
+    async function checkUpdates() {
+      try {
+        const res = await fetch('/api/updates');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const dot = document.getElementById('update-dot');
+        const text = document.getElementById('update-text');
+        const modalCurrVer = document.getElementById('modal-curr-version');
+        const modalLatest = document.getElementById('modal-latest-commit');
+        const modalBadge = document.getElementById('modal-status-badge');
+        const modalMsg = document.getElementById('modal-latest-msg');
+
+        if (modalCurrVer) modalCurrVer.textContent = 'v' + data.version + ' (' + data.current_commit + ')';
+        if (modalLatest) modalLatest.textContent = data.latest_commit || '--';
+        if (modalMsg) modalMsg.textContent = data.latest_message || '';
+
+        if (data.update_available) {
+          if (dot) dot.className = 'h-2 w-2 rounded-full bg-amber-400 animate-ping';
+          if (text) {
+            text.textContent = '¡Update Disponible! 🚀';
+            text.className = 'font-mono text-[11px] text-amber-400 font-bold';
+          }
+          if (modalBadge) {
+            modalBadge.className = 'px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[11px] font-sans font-bold';
+            modalBadge.textContent = '¡Nueva versión disponible!';
+          }
+        } else {
+          if (dot) dot.className = 'h-2 w-2 rounded-full bg-emerald-400';
+          if (text) {
+            text.textContent = 'v' + data.version;
+            text.className = 'font-mono text-[11px] text-zinc-300';
+          }
+          if (modalBadge) {
+            modalBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[11px] font-sans';
+            modalBadge.textContent = 'Al día ✅';
+          }
+        }
+      } catch (e) {
+        console.warn('Error verificando actualizaciones:', e);
+      }
     }
 
     // Init on DOM ready
     window.addEventListener('DOMContentLoaded', () => {
       initCharts();
       setupEvents();
-      fetchMetricsHTTP(); // Instant load
-      connectWebSocket();  // Real-time live connection
+      fetchMetricsHTTP(); // Carga instantánea
+      connectWebSocket();  // Transmisión en tiempo real
+      checkUpdates();      // Comprobar si hay actualizaciones
+      setInterval(checkUpdates, 5 * 60 * 1000); // Comprobar cada 5 minutos
     });
   </script>
 </body>

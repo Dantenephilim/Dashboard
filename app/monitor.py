@@ -75,14 +75,26 @@ def categorize_service(image_name: str, name: str) -> dict:
     name_lower = (name or "").lower()
     combined = f"{image_lower} {name_lower}"
 
-    if any(k in combined for k in ["postgres", "mysql", "mariadb", "mongo", "redis", "memcached", "sqlite", "clickhouse"]):
-        return {"category": "database", "label": "Base de Datos", "badge_color": "indigo", "icon": "🗄️"}
+    if "wazuh" in combined:
+        return {"category": "security", "label": "Wazuh SIEM", "badge_color": "blue", "icon": "🛡️"}
+    elif "graylog" in combined:
+        return {"category": "logging", "label": "Graylog Logs", "badge_color": "orange", "icon": "📜"}
+    elif "ollama" in combined:
+        return {"category": "ai", "label": "Ollama LLM", "badge_color": "purple", "icon": "🦙"}
+    elif "open-webui" in combined:
+        return {"category": "ai", "label": "Open-WebUI", "badge_color": "violet", "icon": "🤖"}
+    elif "n8n" in combined:
+        return {"category": "ai", "label": "n8n Automatización", "badge_color": "rose", "icon": "⚡"}
+    elif "osiris" in combined:
+        return {"category": "web", "label": "Osiris Web", "badge_color": "sky", "icon": "👁️"}
+    elif "mcp" in combined:
+        return {"category": "mcp", "label": "Servidor MCP", "badge_color": "teal", "icon": "🔌"}
+    elif any(k in combined for k in ["postgres", "mysql", "mariadb", "mongo", "redis", "memcached", "sqlite", "clickhouse"]):
+        return {"category": "database", "label": "Base de Datos", "badge_color": "indigo", "icon": "🐘" if "postgres" in combined else "🗄️"}
     elif any(k in combined for k in ["grafana", "prometheus", "netdata", "portainer", "uptime-kuma", "loki", "jaeger", "cadvisor", "dozzle"]):
         return {"category": "monitoring", "label": "Monitoreo", "badge_color": "emerald", "icon": "📊"}
     elif any(k in combined for k in ["nginx", "apache", "caddy", "traefik", "node", "next", "vue", "react", "fastapi", "flask", "django", "wordpress", "ghost"]):
         return {"category": "web", "label": "Servicio Web", "badge_color": "sky", "icon": "🌐"}
-    elif any(k in combined for k in ["ollama", "n8n", "open-webui", "comfyui", "stable-diffusion", "flowise", "langchain"]):
-        return {"category": "ai", "label": "IA / Auto", "badge_color": "purple", "icon": "🧠"}
     elif any(k in combined for k in ["nextcloud", "owncloud", "minio", "s3", "seafile", "syncthing"]):
         return {"category": "storage", "label": "Cloud / Storage", "badge_color": "amber", "icon": "☁️"}
     elif any(k in combined for k in ["plex", "jellyfin", "emby", "radarr", "sonarr", "transmission", "qbittorrent"]):
@@ -462,7 +474,8 @@ def get_docker_metrics() -> dict:
         name = c.name.lstrip("/")
         image_tags = c.image.tags
         image_name = image_tags[0] if image_tags else (c.attrs.get("Config", {}).get("Image") or c.image.short_id)
-        ports = parse_ports(c.attrs)
+        health_info = c.attrs.get("State", {}).get("Health", {})
+        health_status = health_info.get("Status") if health_info else None
 
         containers_data.append({
             "id": c.short_id,
@@ -471,6 +484,7 @@ def get_docker_metrics() -> dict:
             "image": image_name,
             "status": c.status,
             "state": c.attrs.get("State", {}).get("Status", c.status),
+            "health": health_status,
             "created": c.attrs.get("Created", ""),
             "ports": ports,
             "service_info": categorize_service(image_name, name),

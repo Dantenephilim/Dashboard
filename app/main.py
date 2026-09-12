@@ -155,6 +155,54 @@ async def api_docker():
     return await asyncio.to_thread(get_docker_metrics)
 
 
+def get_current_commit() -> str:
+    import subprocess
+    from app import __version__
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL, timeout=2)
+        return out.decode("utf-8").strip()
+    except Exception:
+        return "v" + __version__
+
+
+def check_github_updates() -> dict:
+    import urllib.request
+    from app import __version__
+    current_commit = get_current_commit()
+    result = {
+        "version": __version__,
+        "current_commit": current_commit,
+        "update_available": False,
+        "latest_commit": current_commit,
+        "latest_message": "Sistema al día",
+        "update_command": "sudo bash update.sh",
+        "error": None
+    }
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/Dantenephilim/Dashboard/commits/main",
+            headers={"User-Agent": "Ubuntu-Dashboard-Monitor"}
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                remote_sha = data.get("sha", "")[:7]
+                commit_msg = data.get("commit", {}).get("message", "").split("\n")[0]
+                result["latest_commit"] = remote_sha
+                result["latest_message"] = commit_msg
+                if remote_sha and current_commit and not current_commit.startswith("v") and remote_sha != current_commit:
+                    result["update_available"] = True
+    except Exception as e:
+        result["error"] = str(e)
+    return result
+
+
+@app.get("/api/updates")
+async def api_updates():
+    """Verifica si hay actualizaciones disponibles en GitHub."""
+    return await asyncio.to_thread(check_github_updates)
+
+
 @app.get("/api/ping")
 async def api_ping():
     """Health check simple."""
