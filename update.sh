@@ -18,25 +18,17 @@ echo -e "${CYAN}==============================================================${
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-echo -e "${BLUE}[1/4] Comprobando cambios en GitHub...${NC}"
-git fetch origin main 2>/dev/null || true
-LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null || echo "local")
-REMOTE_HASH=$(git rev-parse origin/main 2>/dev/null || echo "remote")
+# Evitar errores de 'dubious ownership' de git si se ejecuta con sudo
+git config --global --add safe.directory "$SCRIPT_DIR" 2>/dev/null || true
 
-if [ "$LOCAL_HASH" = "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "local" ]; then
-  echo -e "${GREEN}[✓] Tu código ya se encuentra en la versión más reciente.${NC}"
-else
-  echo -e "${YELLOW}[+] Nuevos cambios detectados. Descargando con git pull...${NC}"
-  git pull origin main
-fi
+echo -e "${BLUE}[1/4] Descargando última versión de GitHub...${NC}"
+git fetch origin main
+git reset --hard origin/main
 
-echo -e "${BLUE}[2/4] Reconstruyendo imagen optimizada...${NC}"
-docker compose build
+echo -e "${BLUE}[2/4] Reconstruyendo imagen optimizada y levantando contenedor...${NC}"
+docker compose up -d --build
 
-echo -e "${BLUE}[3/4] Reiniciando el contenedor en el puerto 8090...${NC}"
-docker compose up -d
-
-echo -e "${BLUE}[4/4] Limpiando capas intermedias huérfanas...${NC}"
+echo -e "${BLUE}[3/4] Limpiando capas intermedias...${NC}"
 docker image prune -f 2>/dev/null || true
 
 # Obtener IP
