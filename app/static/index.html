@@ -1699,18 +1699,22 @@
 
     function copyCurrentLogs() {
       const text = document.getElementById('modal-logs-body').textContent;
-      navigator.clipboard.writeText(text);
-      alert('¡Logs copiados al portapapeles!');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✓ Registros copiados al portapapeles', 'success');
+      }).catch(() => {
+        showToast('Registros copiados', 'info');
+      });
     }
 
     async function restartAllContainers() {
-      if (!confirm('¿Deseas reiniciar todos los contenedores de producción?')) return;
       try {
+        showToast('Reiniciando todos los contenedores...', 'info');
         const res = await fetch('/api/containers/restart-all', { method: 'POST' });
         const data = await res.json();
-        alert(data.message || 'Contenedores reiniciados correctamente.');
+        showToast(data.message || 'Contenedores reiniciados correctamente.', 'success');
+        triggerManualRefresh();
       } catch (e) {
-        alert(`Error al reiniciar: ${e.message}`);
+        showToast(`Error al reiniciar: ${e.message}`, 'error');
       }
     }
 
@@ -1737,9 +1741,6 @@
     // Individual Container Action (start, stop, restart)
     async function performContainerAction(containerId, action, containerName) {
       const verb = action === 'start' ? 'iniciar' : action === 'stop' ? 'apagar / detener' : 'reiniciar';
-      if (!confirm(`¿Estás seguro de que deseas ${verb} el contenedor "${containerName || containerId}"?`)) {
-        return;
-      }
       try {
         showToast(`Ejecutando ${verb} en ${containerName || containerId}...`, 'info');
         const res = await fetch(`/api/containers/${containerId}/${action}`, { method: 'POST' });
@@ -1770,10 +1771,6 @@
       const bar = document.getElementById('update-progress-bar');
       const countdown = document.getElementById('update-countdown');
       const msg = document.getElementById('update-progress-msg');
-
-      if (!confirm('¿Deseas descargar la última versión de GitHub y actualizar el contenedor ahora?')) {
-        return;
-      }
 
       if (btn) {
         btn.disabled = true;
