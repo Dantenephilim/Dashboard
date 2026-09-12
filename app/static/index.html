@@ -74,6 +74,40 @@
       border-color: rgba(6, 182, 212, 0.5);
       box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
     }
+
+    /* Sparkline Wave Animations (Continuous 60fps GPU stream) */
+    @keyframes liveWaveScroll {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+      100% {
+        transform: translate3d(-48px, 0, 0);
+      }
+    }
+
+    .sparkline-track {
+      width: 56px;
+      height: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .sparkline-wave-flow {
+      display: block;
+      width: 144px;
+      min-width: 144px;
+      height: 16px;
+      animation: liveWaveScroll 1.6s linear infinite;
+      will-change: transform;
+    }
+
+    .sparkline-wave-fast {
+      animation-duration: 0.9s !important;
+    }
+
+    .sparkline-wave-crit {
+      animation-duration: 0.5s !important;
+    }
   </style>
 </head>
 <body class="bg-[#080c14] text-slate-200 min-h-screen font-sans antialiased text-xs select-none selection:bg-cyan-500/30 selection:text-cyan-300">
@@ -654,6 +688,38 @@
     // Maximum history points
     const MAX_CHART_POINTS = 30;
 
+    function generateLiveSparklineSvg(containerId, isRunning, cpuVal) {
+      if (!isRunning) {
+        return `
+          <div class="w-14 h-4 flex items-center justify-center opacity-40" title="Contenedor detenido">
+            <svg class="w-14 h-4" viewBox="0 0 52 16" fill="none">
+              <line x1="2" y1="8" x2="50" y2="8" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3 3" />
+            </svg>
+          </div>
+        `;
+      }
+
+      const color = cpuVal >= 60 ? '#f43f5e' : (cpuVal >= 25 ? '#f59e0b' : '#10b981');
+      const dotColorClass = cpuVal >= 60 ? 'bg-rose-500' : (cpuVal >= 25 ? 'bg-amber-500' : 'bg-emerald-500');
+      const dotPingClass = cpuVal >= 60 ? 'bg-rose-400' : (cpuVal >= 25 ? 'bg-amber-400' : 'bg-emerald-400');
+      const speedClass = cpuVal >= 60 ? 'sparkline-wave-crit' : (cpuVal >= 25 ? 'sparkline-wave-fast' : '');
+
+      return `
+        <div class="flex items-center gap-1.5" id="sparkline-wrapper-${containerId}">
+          <div class="sparkline-track w-14 h-4 overflow-hidden relative flex items-center" title="Actividad en tiempo real (${cpuVal}% CPU)">
+            <svg id="wave-svg-${containerId}" class="sparkline-wave-flow ${speedClass}" viewBox="0 0 144 16" fill="none" preserveAspectRatio="none">
+              <path id="wave-path-${containerId}" d="M0,8 C8,3 14,3 20,13 C25,14 30,1 36,2 C40,3 44,8 48,8 C56,3 62,3 68,13 C73,14 78,1 84,2 C88,3 92,8 96,8 C104,3 110,3 116,13 C121,14 126,1 132,2 C136,3 140,8 144,8" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-l from-[#0a0f19] to-transparent pointer-events-none"></div>
+          </div>
+          <span id="spark-dot-${containerId}" class="relative flex h-1.5 w-1.5 flex-shrink-0" title="Activo">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotPingClass} opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-1.5 w-1.5 ${dotColorClass}"></span>
+          </span>
+        </div>
+      `;
+    }
+
     // Helper: Modal management
     function openModal(id) {
       const el = document.getElementById(id);
@@ -994,6 +1060,8 @@
       coresContainer.innerHTML = html;
     }
 
+    let lastContainerFingerprint = '';
+
     // Render Docker Containers (Dozzle style)
     function renderDockerContainers(docker) {
       const containerListEl = document.getElementById('containers-list');
@@ -1002,6 +1070,7 @@
 
       if (!docker || !docker.containers) {
         containerListEl.innerHTML = '<div class="text-center py-6 text-slate-500 font-mono">No se detectó Docker daemon.</div>';
+        lastContainerFingerprint = '';
         return;
       }
 
@@ -1033,8 +1102,50 @@
 
       if (list.length === 0) {
         containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay contenedores que coincidan con el filtro.</div>';
+        lastContainerFingerprint = '';
         return;
       }
+
+      // Compute fingerprint to avoid unnecessary full DOM rebuilds (keeps CSS wave animations flowing smoothly without resets!)
+      const currentFingerprint = list.map(c => `${c.id}:${c.status}:${c.health}:${c.ports ? c.ports.map(p=>p.link_port||p.internal).join(',') : ''}`).join('|');
+
+      if (currentFingerprint === lastContainerFingerprint && containerListEl.children.length === list.length) {
+        // In-place metric update: preserves running CSS animations smoothly at 60 FPS
+        list.forEach(c => {
+          const isRunning = (c.status || '').toLowerCase() === 'running';
+          const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
+          const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
+
+          const cpuEl = document.getElementById(`cpu-val-${c.id}`);
+          if (cpuEl) cpuEl.textContent = `${cpuVal}%`;
+
+          const memEl = document.getElementById(`mem-val-${c.id}`);
+          if (memEl) memEl.textContent = `MEM: ${memMb} MB`;
+
+          const wavePath = document.getElementById(`wave-path-${c.id}`);
+          const waveSvg = document.getElementById(`wave-svg-${c.id}`);
+          const dotEl = document.getElementById(`spark-dot-${c.id}`);
+
+          if (wavePath && waveSvg && isRunning) {
+            const color = cpuVal >= 60 ? '#f43f5e' : (cpuVal >= 25 ? '#f59e0b' : '#10b981');
+            const dotColorClass = cpuVal >= 60 ? 'bg-rose-500' : (cpuVal >= 25 ? 'bg-amber-500' : 'bg-emerald-500');
+            const dotPingClass = cpuVal >= 60 ? 'bg-rose-400' : (cpuVal >= 25 ? 'bg-amber-400' : 'bg-emerald-400');
+            const speedClass = cpuVal >= 60 ? 'sparkline-wave-crit' : (cpuVal >= 25 ? 'sparkline-wave-fast' : '');
+
+            wavePath.setAttribute('stroke', color);
+            waveSvg.className = `sparkline-wave-flow ${speedClass}`;
+            if (dotEl) {
+              dotEl.innerHTML = `
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotPingClass} opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-1.5 w-1.5 ${dotColorClass}"></span>
+              `;
+            }
+          }
+        });
+        return;
+      }
+
+      lastContainerFingerprint = currentFingerprint;
 
       let rowsHtml = '';
       list.forEach(c => {
@@ -1079,16 +1190,11 @@
         const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
         const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
 
-        // Mini sparkline SVG wave
-        const sparklineColor = isRunning ? '#10b981' : '#64748b';
-        const waveSvg = `
-          <svg class="w-14 h-4 text-emerald-400" viewBox="0 0 50 15" fill="none" stroke="${sparklineColor}" stroke-width="1.8">
-            <path d="M0,8 Q10,${isRunning ? '2' : '8'} 20,${isRunning ? '12' : '8'} T35,${isRunning ? '4' : '8'} T50,8" />
-          </svg>
-        `;
+        // Mini sparkline SVG wave (animado fluidamente a 60fps)
+        const waveSvg = generateLiveSparklineSvg(c.id, isRunning, Number(cpuVal));
 
         rowsHtml += `
-          <div class="grid grid-cols-12 gap-2 items-center px-2.5 py-2 bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/40 transition">
+          <div class="grid grid-cols-12 gap-2 items-center px-2.5 py-2 bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/40 transition" data-cid="${c.id}" id="container-row-${c.id}">
             
             <!-- Col 1: Icon & Name (5 cols) -->
             <div class="col-span-5 flex items-center gap-2 overflow-hidden">
@@ -1113,11 +1219,11 @@
             <!-- Col 4: Metrics, Sparkline, Logs (3 cols) -->
             <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px]">
               <div class="flex flex-col text-right">
-                <span class="text-slate-300">CPU: <b class="text-cyan-400">${cpuVal}%</b></span>
-                <span class="text-slate-400">MEM: ${memMb} MB</span>
+                <span class="text-slate-300">CPU: <b class="text-cyan-400" id="cpu-val-${c.id}">${cpuVal}%</b></span>
+                <span class="text-slate-400" id="mem-val-${c.id}">MEM: ${memMb} MB</span>
               </div>
 
-              <!-- Sparkline -->
+              <!-- Sparkline Live Wave -->
               <div class="hidden sm:block">
                 ${waveSvg}
               </div>
@@ -1157,6 +1263,7 @@
     // Filter selector
     function setFilter(filter) {
       currentFilter = filter;
+      lastContainerFingerprint = '';
       document.querySelectorAll('.filter-btn').forEach(btn => {
         if (btn.getAttribute('data-filter') === filter) {
           btn.className = 'filter-btn active px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40';
@@ -1171,6 +1278,7 @@
 
     // Instant search listener
     document.getElementById('search-container').addEventListener('input', () => {
+      lastContainerFingerprint = '';
       if (currentMetrics) {
         renderDockerContainers(currentMetrics.docker);
       }
