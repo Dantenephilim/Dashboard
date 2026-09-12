@@ -21,6 +21,8 @@ services:
       # Montaje para detectar versión de Ubuntu Server y Hostname
       - /etc/os-release:/etc/host-os-release:ro
       - /etc/hostname:/etc/host_hostname:ro
+      # Persistencia de configuraciones (programador de actualizaciones automáticas)
+      - ./app/data:/app/app/data
     deploy:
       resources:
         limits:

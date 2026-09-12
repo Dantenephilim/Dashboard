@@ -75,6 +75,22 @@
       box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
     }
 
+    /* Radial Gauge & KPI Smooth Transitions */
+    #radial-cpu-circle {
+      transition: stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.85s ease;
+      will-change: stroke-dashoffset, stroke;
+    }
+
+    .smooth-progress {
+      transition: width 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: width;
+    }
+
+    .core-heat-bar {
+      transition: width 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: width;
+    }
+
     /* Sparkline Wave Animations (Continuous 60fps GPU stream) */
     @keyframes liveWaveScroll {
       0% {
@@ -253,6 +269,9 @@
                 <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">MEMORY</span>
                 <span id="kpi-ram-pct" class="font-mono font-bold text-emerald-400 text-[11px]">0.0%</span>
               </div>
+              <div class="w-full bg-slate-900/90 rounded-full h-1.5 overflow-hidden my-1.5 border border-slate-800">
+                <div id="ram-progress-bar" class="smooth-progress bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full" style="width: 0%;"></div>
+              </div>
               <div class="flex flex-col gap-1 font-mono text-[11px]">
                 <div class="flex justify-between">
                   <span class="text-slate-400">Used</span>
@@ -293,6 +312,9 @@
               <div class="flex items-center justify-between mb-1">
                 <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">DISK I/O</span>
                 <span id="kpi-disk-pct" class="font-mono text-cyan-400 text-[10px]">0% used</span>
+              </div>
+              <div class="w-full bg-slate-900/90 rounded-full h-1.5 overflow-hidden my-1.5 border border-slate-800">
+                <div id="disk-progress-bar" class="smooth-progress bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full" style="width: 0%;"></div>
               </div>
               <div class="flex flex-col gap-1 font-mono text-[11px]">
                 <div class="flex justify-between">
@@ -620,18 +642,18 @@
   <!-- ========================================================================= -->
   <!-- MODAL: ACTUALIZACIONES Y ESTADO DE GITHUB                                 -->
   <!-- ========================================================================= -->
-  <dialog id="modal-updates" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/75 max-w-md w-full">
+  <dialog id="modal-updates" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/75 max-w-xl w-full">
     <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
       <div class="flex items-center gap-2">
         <span class="h-2 w-2 rounded-full bg-cyan-400 pulse-dot"></span>
-        <h3 class="font-mono font-bold text-sm text-slate-100">SISTEMA DE ACTUALIZACIONES</h3>
+        <h3 class="font-mono font-bold text-sm text-slate-100">SISTEMA DE ACTUALIZACIONES Y PROGRAMACIÓN</h3>
       </div>
       <button onclick="closeModal('modal-updates')" class="text-slate-400 hover:text-white p-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
     
-    <div class="p-4 flex flex-col gap-3 font-mono text-xs">
+    <div class="p-4 flex flex-col gap-3 font-mono text-xs max-h-[80vh] overflow-y-auto">
       <div class="bg-slate-900/90 border border-slate-800 rounded p-3 flex flex-col gap-1.5">
         <div class="flex justify-between">
           <span class="text-slate-400">Versión Local:</span>
@@ -647,16 +669,16 @@
         </div>
       </div>
 
-      <!-- Botones de Acción de Actualización -->
+      <!-- Botones de Acción de Actualización Inmediata -->
       <div class="flex flex-col gap-2">
         <button id="btn-apply-update" onclick="applyGitHubUpdate()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold font-mono text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-          <span id="btn-apply-update-text">Actualizar directo desde GitHub 🚀</span>
+          <span id="btn-apply-update-text">Actualizar ahora directo desde GitHub 🚀</span>
         </button>
 
         <a href="https://github.com/Dantenephilim/Dashboard" target="_blank" rel="noopener noreferrer" class="w-full py-1.5 px-3 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-mono text-[11px] flex items-center justify-center gap-1.5 transition">
           <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span>Abrir repositorio en GitHub ↗</span>
+          <span>Ver cambios en repositorio de GitHub ↗</span>
         </a>
       </div>
 
@@ -667,7 +689,7 @@
             <span class="animate-spin text-sm">🔄</span>
             <span id="update-progress-title">Actualizando sistema...</span>
           </span>
-          <span id="update-countdown" class="font-mono text-xs">15s</span>
+          <span id="update-countdown" class="font-mono text-xs">18s</span>
         </div>
         <p id="update-progress-msg" class="text-[10px] text-slate-300">Descargando últimos cambios desde GitHub y reconstruyendo contenedor...</p>
         <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden mt-1">
@@ -675,8 +697,79 @@
         </div>
       </div>
 
+      <!-- SECCIÓN: PROGRAMACIÓN DE ACTUALIZACIONES AUTOMÁTICAS -->
+      <div class="border-t border-slate-800 pt-3 mt-1 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="text-cyan-400 text-sm">⏰</span>
+            <span class="font-bold text-slate-100 uppercase tracking-wide text-[11px]">PROGRAMAR ACTUALIZACIONES AUTOMÁTICAS</span>
+          </div>
+          <!-- Toggle Switch -->
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="autoupdate-toggle" class="sr-only peer" onchange="toggleAutoUpdateEnabled()">
+            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+            <span id="autoupdate-toggle-label" class="ml-2 text-[10px] font-mono font-semibold text-slate-400">Inactivo</span>
+          </label>
+        </div>
+
+        <div id="autoupdate-form-box" class="bg-[#090f1a] border border-slate-800 rounded-lg p-3 flex flex-col gap-2.5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <!-- Hora de Ejecución -->
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] text-slate-400 font-semibold" for="autoupdate-time">Hora de Ejecución (HH:MM):</label>
+              <input type="time" id="autoupdate-time" value="04:00" class="bg-slate-900 border border-slate-700 text-slate-200 px-2 py-1.5 rounded font-mono text-xs focus:border-cyan-500 outline-none">
+            </div>
+
+            <!-- Frecuencia -->
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] text-slate-400 font-semibold" for="autoupdate-freq">Frecuencia:</label>
+              <select id="autoupdate-freq" class="bg-slate-900 border border-slate-700 text-slate-200 px-2 py-1.5 rounded font-mono text-xs focus:border-cyan-500 outline-none">
+                <option value="daily">Diaria (Todos los días)</option>
+                <option value="weekly">Semanal (Cada Domingo)</option>
+                <option value="12h">Cada 12 Horas</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Checkbox Condición GitHub -->
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="autoupdate-only-new" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0">
+            <span class="text-[10px] text-slate-300">Actualizar solo cuando haya un nuevo commit en GitHub (Recomendado)</span>
+          </label>
+
+          <!-- Tarjeta de Estado y Próxima Ejecución -->
+          <div class="bg-black/50 border border-slate-800/80 rounded p-2 flex flex-col gap-1 text-[10px]">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Próxima actualización:</span>
+              <span id="autoupdate-next-display" class="text-cyan-300 font-bold">Cargando...</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Último estado:</span>
+              <span id="autoupdate-last-status" class="text-slate-300 truncate max-w-[260px]">Sin ejecuciones previas</span>
+            </div>
+          </div>
+
+          <!-- Botón Guardar -->
+          <button onclick="saveAutoUpdateSchedule()" class="w-full py-2 px-3 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold font-mono text-[11px] flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/30 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            Guardar Configuración de Actualización
+          </button>
+        </div>
+
+        <!-- Cron nativo para el host Ubuntu -->
+        <div class="flex flex-col gap-1 mt-1">
+          <span class="text-[10px] text-slate-400">O configura una tarea Cron nativa en tu servidor Ubuntu:</span>
+          <div class="bg-black/80 border border-slate-800 rounded p-2 flex items-center justify-between">
+            <code id="cmd-cron" class="text-amber-300 select-all font-mono text-[10px] truncate mr-2">0 4 * * * root cd ~/Dashboard && bash update.sh >> /var/log/dashboard-autoupdate.log 2>&1</code>
+            <button onclick="copyCronCommand()" title="Copiar cron" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex-shrink-0">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="text-[11px] text-slate-300 mt-1">
-        O ejecuta manualmente este comando en tu terminal de Ubuntu:
+        O actualiza manualmente en tu terminal de Ubuntu:
       </div>
 
       <div class="bg-black/80 border border-slate-700/80 rounded p-2.5 flex items-center justify-between">
@@ -765,10 +858,47 @@
     }
     function openUpdateModal() {
       checkUpdates();
+      loadAutoUpdateSchedule();
       openModal('modal-updates');
     }
 
-    // Initialize Charts
+    // Smooth 60fps numeric interpolation helper
+    const activeNumberTweens = {};
+    function animateNumber(elementId, targetVal, decimals = 1, suffix = '%', duration = 750) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      if (activeNumberTweens[elementId]) {
+        cancelAnimationFrame(activeNumberTweens[elementId].rafId);
+      }
+
+      const currentText = el.textContent || '';
+      const parsed = parseFloat(currentText.replace(/[^0-9.-]/g, ''));
+      const startVal = isNaN(parsed) ? targetVal : parsed;
+
+      if (Math.abs(startVal - targetVal) < 0.05) {
+        el.textContent = `${targetVal.toFixed(decimals)}${suffix}`;
+        return;
+      }
+
+      const startTime = performance.now();
+      function tick(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const current = startVal + (targetVal - startVal) * ease;
+        el.textContent = `${current.toFixed(decimals)}${suffix}`;
+        if (progress < 1) {
+          activeNumberTweens[elementId] = { rafId: requestAnimationFrame(tick) };
+        } else {
+          el.textContent = `${targetVal.toFixed(decimals)}${suffix}`;
+          delete activeNumberTweens[elementId];
+        }
+      }
+      activeNumberTweens[elementId] = { rafId: requestAnimationFrame(tick) };
+    }
+
+    // Initialize Charts with Fluid 60fps Sliding Motion
     function initCharts() {
       const commonGrid = {
         color: 'rgba(30, 41, 59, 0.4)',
@@ -799,7 +929,10 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: false,
+          animation: {
+            duration: 750,
+            easing: 'linear'
+          },
           plugins: { legend: { display: false }, tooltip: { enabled: true } },
           scales: {
             x: { display: false },
@@ -820,7 +953,7 @@
               borderColor: '#38bdf8',
               backgroundColor: 'transparent',
               borderWidth: 1.5,
-              tension: 0.2,
+              tension: 0.25,
               pointRadius: 0
             },
             {
@@ -828,7 +961,7 @@
               borderColor: '#fb923c',
               backgroundColor: 'transparent',
               borderWidth: 1.5,
-              tension: 0.2,
+              tension: 0.25,
               pointRadius: 0
             }
           ]
@@ -836,7 +969,10 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: false,
+          animation: {
+            duration: 750,
+            easing: 'linear'
+          },
           plugins: { legend: { display: false } },
           scales: {
             x: { display: false },
@@ -857,7 +993,7 @@
               borderColor: '#34d399',
               backgroundColor: 'transparent',
               borderWidth: 1.5,
-              tension: 0.2,
+              tension: 0.25,
               pointRadius: 0
             },
             {
@@ -865,7 +1001,7 @@
               borderColor: '#22d3ee',
               backgroundColor: 'transparent',
               borderWidth: 1.5,
-              tension: 0.2,
+              tension: 0.25,
               pointRadius: 0
             }
           ]
@@ -873,7 +1009,10 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: false,
+          animation: {
+            duration: 750,
+            easing: 'linear'
+          },
           plugins: { legend: { display: false } },
           scales: {
             x: { display: false },
@@ -964,10 +1103,9 @@
           }
         }
 
-        // 3. CPU Aggregate Speedometer Radial Gauge
+        // 3. CPU Aggregate Speedometer Radial Gauge (Fluid 60fps)
         const cpuPct = sys.cpu ? Number(sys.cpu.percent || 0) : 0;
-        const elRadVal = document.getElementById('radial-cpu-val');
-        if (elRadVal) elRadVal.textContent = `${cpuPct.toFixed(1)}%`;
+        animateNumber('radial-cpu-val', cpuPct, 1, '%', 750);
         
         // Update SVG circle stroke-dashoffset (circumference = 2 * PI * 40 ≈ 251.2)
         const circumference = 251.2;
@@ -987,16 +1125,18 @@
         // 4. Per-Core Heatmap Bars
         renderCoresHeatmap(sys.cpu);
 
-        // 5. Memory
+        // 5. Memory (Fluid bar and text)
         const mem = sys.memory || {};
-        const elRamPct = document.getElementById('kpi-ram-pct');
-        if (elRamPct) elRamPct.textContent = `${Number(mem.percent || 0).toFixed(1)}%`;
+        const ramPct = Number(mem.percent || 0);
+        animateNumber('kpi-ram-pct', ramPct, 1, '%', 750);
         const elRamUsed = document.getElementById('kpi-ram-used');
         if (elRamUsed) elRamUsed.textContent = mem.used_gb ? `${mem.used_gb} GB` : `${mem.used_mb || 0} MB`;
         const elRamCached = document.getElementById('kpi-ram-cached');
         if (elRamCached) elRamCached.textContent = mem.cached_mb ? `${mem.cached_mb} MB` : '--';
         const elRamFree = document.getElementById('kpi-ram-free');
         if (elRamFree) elRamFree.textContent = mem.free_mb ? `${mem.free_mb} MB` : `${mem.available_gb || 0} GB`;
+        const ramBar = document.getElementById('ram-progress-bar');
+        if (ramBar) ramBar.style.width = `${Math.min(100, Math.max(0, ramPct))}%`;
 
         // 6. Load Average
         const loads = (sys.cpu && sys.cpu.load_avg) ? sys.cpu.load_avg : [0, 0, 0];
@@ -1005,15 +1145,20 @@
         const elLoad5 = document.getElementById('load-5');
         if (elLoad5) elLoad5.textContent = Number(loads[1] || 0).toFixed(2);
         const elLoad15 = document.getElementById('load-15');
-        // 7. Disk I/O & Storage
+        if (elLoad15) elLoad15.textContent = Number(loads[2] || 0).toFixed(2);
+
+        // 7. Disk I/O & Storage (Fluid bar and numbers)
         const disk = sys.disk || {};
         const diskIo = disk.io || {};
+        const diskPct = Number(disk.percent || 0);
         const elDiskPct = document.getElementById('kpi-disk-pct');
-        if (elDiskPct) elDiskPct.textContent = `${Number(disk.percent || 0).toFixed(1)}% (${disk.used_gb || 0}/${disk.total_gb || 0} GB)`;
+        if (elDiskPct) elDiskPct.textContent = `${diskPct.toFixed(1)}% (${disk.used_gb || 0}/${disk.total_gb || 0} GB)`;
+        const diskBar = document.getElementById('disk-progress-bar');
+        if (diskBar) diskBar.style.width = `${Math.min(100, Math.max(0, diskPct))}%`;
         const elDiskRead = document.getElementById('disk-read-rate');
-        if (elDiskRead) elDiskRead.textContent = `${diskIo.read_kbps || 0} KB/s`;
+        if (elDiskRead) elDiskRead.textContent = `${Number(diskIo.read_kbps || 0).toFixed(1)} KB/s`;
         const elDiskWrite = document.getElementById('disk-write-rate');
-        if (elDiskWrite) elDiskWrite.textContent = `${diskIo.write_kbps || 0} KB/s`;
+        if (elDiskWrite) elDiskWrite.textContent = `${Number(diskIo.write_kbps || 0).toFixed(1)} KB/s`;
         const elFDiskUsed = document.getElementById('footer-disk-used');
         if (elFDiskUsed) elFDiskUsed.textContent = `${disk.used_gb || 0} GB`;
         const elFDiskTotal = document.getElementById('footer-disk-total');
@@ -1021,12 +1166,12 @@
         const elFDiskFree = document.getElementById('footer-disk-free');
         if (elFDiskFree) elFDiskFree.textContent = `${disk.free_gb || 0} GB`;
 
-        // 8. Network Traffic
+        // 8. Network Traffic (Fluid rates)
         const net = (sys.network && sys.network.io) ? sys.network.io : {};
         const elNetIn = document.getElementById('net-in-rate');
-        if (elNetIn) elNetIn.textContent = `↓ ${net.in_kbps || 0} KB/s`;
+        if (elNetIn) elNetIn.textContent = `↓ ${Number(net.in_kbps || 0).toFixed(1)} KB/s`;
         const elNetOut = document.getElementById('net-out-rate');
-        if (elNetOut) elNetOut.textContent = `↑ ${net.out_kbps || 0} KB/s`;
+        if (elNetOut) elNetOut.textContent = `↑ ${Number(net.out_kbps || 0).toFixed(1)} KB/s`;
 
         // 9. System metadata
         const elSysOs = document.getElementById('kpi-sys-os');
@@ -1793,8 +1938,101 @@
 
     function copyUpdateCommand() {
       const text = document.getElementById('cmd-update').textContent;
-      navigator.clipboard.writeText(text);
-      alert('¡Comando copiado al portapapeles! Ejecútalo en tu terminal Ubuntu.');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✓ Comando de actualización copiado al portapapeles', 'success');
+      }).catch(() => {
+        showToast('cd ~/Dashboard && sudo bash update.sh', 'info');
+      });
+    }
+
+    function copyCronCommand() {
+      const text = document.getElementById('cmd-cron').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✓ Línea crontab copiada al portapapeles', 'success');
+      }).catch(() => {
+        showToast('Línea de cron lista para copiar', 'info');
+      });
+    }
+
+    async function loadAutoUpdateSchedule() {
+      try {
+        const res = await fetch('/api/updates/schedule');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const toggle = document.getElementById('autoupdate-toggle');
+        const label = document.getElementById('autoupdate-toggle-label');
+        const timeInput = document.getElementById('autoupdate-time');
+        const freqSelect = document.getElementById('autoupdate-freq');
+        const onlyNew = document.getElementById('autoupdate-only-new');
+        const nextDisplay = document.getElementById('autoupdate-next-display');
+        const lastStatus = document.getElementById('autoupdate-last-status');
+        const cronCode = document.getElementById('cmd-cron');
+
+        if (toggle) toggle.checked = Boolean(data.enabled);
+        if (label) {
+          label.textContent = data.enabled ? 'Activo' : 'Inactivo';
+          label.className = data.enabled ? 'ml-2 text-[10px] font-mono font-bold text-cyan-400' : 'ml-2 text-[10px] font-mono font-semibold text-slate-400';
+        }
+        if (timeInput && data.time) timeInput.value = data.time;
+        if (freqSelect && data.frequency) freqSelect.value = data.frequency;
+        if (onlyNew) onlyNew.checked = Boolean(data.only_if_new);
+
+        if (nextDisplay) {
+          if (!data.enabled) {
+            nextDisplay.textContent = 'Programación desactivada';
+            nextDisplay.className = 'text-slate-500 font-bold';
+          } else if (data.next_run) {
+            const d = new Date(data.next_run);
+            nextDisplay.textContent = isNaN(d.getTime()) ? data.next_run : d.toLocaleString();
+            nextDisplay.className = 'text-cyan-300 font-bold';
+          }
+        }
+        if (lastStatus) lastStatus.textContent = data.last_status || 'Sin ejecuciones previas';
+        if (cronCode && data.host_cron) cronCode.textContent = data.host_cron;
+      } catch (err) {
+        console.warn('Error al cargar programación de actualización:', err);
+      }
+    }
+
+    function toggleAutoUpdateEnabled() {
+      const toggle = document.getElementById('autoupdate-toggle');
+      const label = document.getElementById('autoupdate-toggle-label');
+      if (toggle && label) {
+        label.textContent = toggle.checked ? 'Activo' : 'Inactivo';
+        label.className = toggle.checked ? 'ml-2 text-[10px] font-mono font-bold text-cyan-400' : 'ml-2 text-[10px] font-mono font-semibold text-slate-400';
+      }
+    }
+
+    async function saveAutoUpdateSchedule() {
+      const toggle = document.getElementById('autoupdate-toggle');
+      const timeInput = document.getElementById('autoupdate-time');
+      const freqSelect = document.getElementById('autoupdate-freq');
+      const onlyNew = document.getElementById('autoupdate-only-new');
+
+      const payload = {
+        enabled: toggle ? toggle.checked : false,
+        time: timeInput ? timeInput.value : '04:00',
+        frequency: freqSelect ? freqSelect.value : 'daily',
+        only_if_new: onlyNew ? onlyNew.checked : true
+      };
+
+      try {
+        const res = await fetch('/api/updates/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'ok') {
+          showToast('✓ Programación de actualización automática guardada con éxito', 'success');
+          loadAutoUpdateSchedule();
+        } else {
+          showToast(data.message || 'Error al guardar la programación', 'error');
+        }
+      } catch (err) {
+        showToast(`Error al guardar: ${err.message}`, 'error');
+      }
     }
 
     // =========================================================================

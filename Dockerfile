@@ -17,8 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código de la aplicación
+# Copiar código de la aplicación y script de actualización
 COPY app/ ./app/
+COPY update.sh ./update.sh
+RUN chmod +x update.sh
 
 # Exponer el puerto 8090
 EXPOSE 8090

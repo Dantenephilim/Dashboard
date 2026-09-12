@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "time": "04:00",
+  "frequency": "daily",
+  "only_if_new": true,
+  "last_run": null,
+  "last_status": "Sin ejecuciones previas registradas",
+  "next_run": "2026-09-13T04:00:00",
+  "host_cron": "0 4 * * * root cd ~/Dashboard && bash update.sh >> /var/log/dashboard-autoupdate.log 2>&1"
+}
