@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server & Docker Monitor</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='14' x='2' y='3' rx='2'/><line x1='8' x2='16' y1='21' y2='21'/><line x1='12' x2='12' y1='17' y2='21'/></svg>">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              950: '#09090b',
+              900: '#121215',
+              850: '#18181b',
+              800: '#27272a',
+              700: '#3f3f46',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.95); }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased selection:bg-emerald-500/30 selection:text-emerald-400">
+
+  <!-- Header / Navbar -->
+  <header class="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md px-4 sm:px-6 py-3.5 transition-all">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <!-- Title & Host Info -->
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-5 h-5 text-zinc-950" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/>
+            <line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-semibold tracking-tight text-white text-base">Server & Docker Live Monitor</h1>
+            <span id="badge-hostname" class="text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-mono border border-zinc-700/60">localhost</span>
+          </div>
+          <p id="system-os-uptime" class="text-xs text-zinc-400">Detectando sistema...</p>
+        </div>
+      </div>
+
+      <!-- Controls & Live Badge -->
+      <div class="flex items-center gap-3 self-end sm:self-auto">
+        <!-- Live Connection Status -->
+        <div id="ws-status" class="flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800">
+          <span id="ws-indicator" class="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+          <span id="ws-text" class="text-zinc-400">Conectando...</span>
+        </div>
+
+        <!-- Clock / Last Update -->
+        <div class="text-xs text-zinc-500 font-mono hidden md:block">
+          Actualizado: <span id="last-update" class="text-zinc-300">--:--:--</span>
+        </div>
+
+        <!-- Manual refresh button -->
+        <button id="btn-refresh" title="Refrescar métricas ahora" class="p-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Docker Warning Banner (visible when Docker socket is unreachable) -->
+    <div id="docker-alert-banner" class="hidden rounded-xl border border-rose-500/30 bg-rose-950/20 p-4 text-rose-200">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div class="text-sm">
+          <p class="font-semibold text-rose-300" id="docker-alert-title">Docker no disponible</p>
+          <p class="text-zinc-400 mt-1" id="docker-alert-desc">Verifique que el demonio de Docker esté activo y que el socket <code>/var/run/docker.sock</code> esté accesible con permisos de lectura.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top KPI Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- CPU KPI -->
+      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Uso de CPU</span>
+          <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+            </svg>
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpi-cpu-value" class="text-3xl font-bold tracking-tight text-white">0%</span>
+          <span id="kpi-cpu-cores" class="text-xs text-zinc-500">-- Cores</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
+          <div id="kpi-cpu-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-zinc-400 mt-2 font-mono">
+          <span id="kpi-cpu-load">Load: 0.00, 0.00, 0.00</span>
+          <span id="kpi-cpu-freq">-- MHz</span>
+        </div>
+      </div>
+
+      <!-- RAM KPI -->
+      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Memoria RAM</span>
+          <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpi-ram-value" class="text-3xl font-bold tracking-tight text-white">0%</span>
+          <span id="kpi-ram-detail" class="text-xs text-zinc-500">0 / 0 GB</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
+          <div id="kpi-ram-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-zinc-400 mt-2 font-mono">
+          <span>Libre: <span id="kpi-ram-free">0 GB</span></span>
+          <span id="kpi-ram-total">Total: 0 GB</span>
+        </div>
+      </div>
+
+      <!-- Disk KPI -->
+      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Disco Raíz (/)</span>
+          <span class="p-1.5 rounded-lg bg-sky-500/10 text-sky-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 4h16M7 16h2"/>
+            </svg>
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpi-disk-value" class="text-3xl font-bold tracking-tight text-white">0%</span>
+          <span id="kpi-disk-detail" class="text-xs text-zinc-500">0 / 0 GB</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
+          <div id="kpi-disk-bar" class="bg-sky-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-zinc-400 mt-2 font-mono">
+          <span>Libre: <span id="kpi-disk-free">0 GB</span></span>
+          <span id="kpi-disk-total">Total: 0 GB</span>
+        </div>
+      </div>
+
+      <!-- Containers Overview KPI -->
+      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm relative overflow-hidden group hover:border-zinc-700/80 transition">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Docker Containers</span>
+          <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpi-containers-total" class="text-3xl font-bold tracking-tight text-white">0</span>
+          <span class="text-xs text-zinc-500">totales</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-zinc-800/80">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-slow"></span>
+            <span class="text-xs text-zinc-300 font-medium"><span id="kpi-containers-running">0</span> activos</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+            <span class="text-xs text-zinc-400 font-medium"><span id="kpi-containers-stopped">0</span> parados</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Real-time Charts Section -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      
+      <!-- CPU Chart -->
+      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            <h3 class="text-sm font-semibold text-zinc-200">Historial de CPU (%)</h3>
+          </div>
+          <span class="text-xs text-zinc-500 font-mono">Último minuto</span>
+        </div>
+        <div class="h-44 w-full relative">
+          <canvas id="chart-cpu"></canvas>
+        </div>
+      </div>
+
+      <!-- RAM Chart -->
+      <div class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 p-4 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
+            <h3 class="text-sm font-semibold text-zinc-200">Historial de Memoria RAM (%)</h3>
+          </div>
+          <span class="text-xs text-zinc-500 font-mono">Último minuto</span>
+        </div>
+        <div class="h-44 w-full relative">
+          <canvas id="chart-ram"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Radar de Auto-Escaneo Autónomo de Servicios -->
+    <section class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 backdrop-blur-sm overflow-hidden p-4 sm:p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-800/80">
+        <div class="flex items-center gap-3">
+          <div class="relative flex h-3.5 w-3.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 shadow-sm shadow-emerald-500"></span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-semibold text-white tracking-tight">Auto-Escáner de Servicios & Puertos</h2>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">100% Autónomo</span>
+            </div>
+            <p class="text-xs text-zinc-400 mt-0.5">Escaneo continuo en segundo plano: detecta contenedores, servicios web y puertos abiertos sin configuración manual.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <span class="text-xs font-mono text-zinc-300 bg-zinc-950 px-3 py-1 rounded-md border border-zinc-800 flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="services-online-count" class="text-emerald-400 font-bold">0</span> servicios web detectados
+          </span>
+        </div>
+      </div>
+
+      <!-- Discovered Services Grid -->
+      <div id="services-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <!-- Tarjetas dinámicas de servicios -->
+      </div>
+      <div id="services-empty-msg" class="hidden py-8 text-center text-xs text-zinc-500 font-mono">
+        Escaneando servicios activos en el servidor...
+      </div>
+    </section>
+
+    <!-- Docker Containers Table / Grid -->
+    <section class="rounded-xl bg-zinc-900/70 border border-zinc-800/80 backdrop-blur-sm overflow-hidden">
+      <!-- Section Header with Search & Filter -->
+      <div class="p-4 sm:p-5 border-b border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <h2 class="text-base font-semibold text-white tracking-tight">Contenedores Docker</h2>
+          <span id="containers-count-badge" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700/60">0</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Filter Tabs -->
+          <div class="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 text-xs">
+            <button data-filter="all" class="filter-tab px-3 py-1 rounded-md font-medium text-white bg-zinc-800 transition">Todos</button>
+            <button data-filter="running" class="filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition">Activos</button>
+            <button data-filter="stopped" class="filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition">Detenidos</button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative min-w-[200px]">
+            <svg class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input type="text" id="container-search" placeholder="Buscar contenedor o puerto..." 
+                   class="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-3 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition">
+          </div>
+        </div>
+      </div>
+
+      <!-- Container Items Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-zinc-800/80 bg-zinc-950/40 text-zinc-400 uppercase tracking-wider font-mono text-[11px]">
+              <th class="py-3 px-4">Estado</th>
+              <th class="py-3 px-4">Nombre / ID</th>
+              <th class="py-3 px-4">Imagen</th>
+              <th class="py-3 px-4">Uso CPU</th>
+              <th class="py-3 px-4">Uso RAM</th>
+              <th class="py-3 px-4">Puertos Expuestos</th>
+            </tr>
+          </thead>
+          <tbody id="containers-tbody" class="divide-y divide-zinc-800/60 font-sans">
+            <!-- Dynamic rows will be inserted here -->
+            <tr>
+              <td colspan="6" class="py-8 text-center text-zinc-500">
+                Cargando información de contenedores...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State Message -->
+      <div id="no-containers-msg" class="hidden py-12 text-center text-zinc-500 text-sm">
+        No se encontraron contenedores con el criterio seleccionado.
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-7xl mx-auto px-4 sm:px-6 py-6 border-t border-zinc-900 text-center text-xs text-zinc-600">
+    Dashboard de Monitoreo Ligero &bull; FastAPI + WebSockets + Tailwind &bull; Actualización continua
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // State management
+    let fullState = {
+      system: null,
+      docker: { available: false, containers: [] }
+    };
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let cpuChart = null;
+    let ramChart = null;
+    let ws = null;
+    let reconnectTimer = null;
+    let pollingFallbackTimer = null;
+
+    // DOM Elements
+    const elHostname = document.getElementById('badge-hostname');
+    const elOsUptime = document.getElementById('system-os-uptime');
+    const elWsStatus = document.getElementById('ws-status');
+    const elWsIndicator = document.getElementById('ws-indicator');
+    const elWsText = document.getElementById('ws-text');
+    const elLastUpdate = document.getElementById('last-update');
+    const elDockerBanner = document.getElementById('docker-alert-banner');
+    const elDockerAlertDesc = document.getElementById('docker-alert-desc');
+
+    // KPI Elements
+    const elKpiCpuValue = document.getElementById('kpi-cpu-value');
+    const elKpiCpuCores = document.getElementById('kpi-cpu-cores');
+    const elKpiCpuBar = document.getElementById('kpi-cpu-bar');
+    const elKpiCpuLoad = document.getElementById('kpi-cpu-load');
+    const elKpiCpuFreq = document.getElementById('kpi-cpu-freq');
+
+    const elKpiRamValue = document.getElementById('kpi-ram-value');
+    const elKpiRamDetail = document.getElementById('kpi-ram-detail');
+    const elKpiRamBar = document.getElementById('kpi-ram-bar');
+    const elKpiRamFree = document.getElementById('kpi-ram-free');
+    const elKpiRamTotal = document.getElementById('kpi-ram-total');
+
+    const elKpiDiskValue = document.getElementById('kpi-disk-value');
+    const elKpiDiskDetail = document.getElementById('kpi-disk-detail');
+    const elKpiDiskBar = document.getElementById('kpi-disk-bar');
+    const elKpiDiskFree = document.getElementById('kpi-disk-free');
+    const elKpiDiskTotal = document.getElementById('kpi-disk-total');
+
+    const elKpiContainersTotal = document.getElementById('kpi-containers-total');
+    const elKpiContainersRunning = document.getElementById('kpi-containers-running');
+    const elKpiContainersStopped = document.getElementById('kpi-containers-stopped');
+    const elContainersCountBadge = document.getElementById('containers-count-badge');
+    const elContainersTbody = document.getElementById('containers-tbody');
+    const elNoContainersMsg = document.getElementById('no-containers-msg');
+
+    // Initialize Charts
+    function initCharts() {
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 0 },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+            ticks: { color: '#71717a', font: { size: 10 }, maxRotation: 0 }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            grid: { color: 'rgba(255, 255, 255, 0.06)' },
+            ticks: {
+              color: '#71717a',
+              font: { size: 10 },
+              callback: (v) => v + '%'
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#18181b',
+            borderColor: '#27272a',
+            borderWidth: 1,
+            titleColor: '#e4e4e7',
+            bodyColor: '#10b981',
+            padding: 8,
+            displayColors: false,
+            callbacks: {
+              label: (context) => ` ${context.parsed.y}%`
+            }
+          }
+        },
+        elements: {
+          point: { radius: 0, hitRadius: 8 },
+          line: { tension: 0.35, borderWidth: 2 }
+        }
+      };
+
+      // CPU Chart
+      const cpuCtx = document.getElementById('chart-cpu').getContext('2d');
+      const cpuGradient = cpuCtx.createLinearGradient(0, 0, 0, 160);
+      cpuGradient.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+      cpuGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+      cpuChart = new Chart(cpuCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#10b981',
+            backgroundColor: cpuGradient,
+            fill: true
+          }]
+        },
+        options: commonOptions
+      });
+
+      // RAM Chart
+      const ramCtx = document.getElementById('chart-ram').getContext('2d');
+      const ramGradient = ramCtx.createLinearGradient(0, 0, 0, 160);
+      ramGradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+      ramGradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+      ramChart = new Chart(ramCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            borderColor: '#6366f1',
+            backgroundColor: ramGradient,
+            fill: true
+          }]
+        },
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            tooltip: {
+              ...commonOptions.plugins.tooltip,
+              bodyColor: '#818cf8'
+            }
+          }
+        }
+      });
+    }
+
+    // Update charts with new data point
+    function pushChartData(timeLabel, cpuVal, ramVal) {
+      if (!cpuChart || !ramChart) return;
+
+      const maxPoints = 30;
+
+      // Update CPU
+      cpuChart.data.labels.push(timeLabel);
+      cpuChart.data.datasets[0].data.push(cpuVal);
+      if (cpuChart.data.labels.length > maxPoints) {
+        cpuChart.data.labels.shift();
+        cpuChart.data.datasets[0].data.shift();
+      }
+      cpuChart.update();
+
+      // Update RAM
+      ramChart.data.labels.push(timeLabel);
+      ramChart.data.datasets[0].data.push(ramVal);
+      if (ramChart.data.labels.length > maxPoints) {
+        ramChart.data.labels.shift();
+        ramChart.data.datasets[0].data.shift();
+      }
+      ramChart.update();
+    }
+
+    // Set initial chart history
+    function setChartHistory(history) {
+      if (!cpuChart || !ramChart || !history) return;
+
+      const labels = history.map(h => h.time);
+      const cpuData = history.map(h => h.cpu);
+      const ramData = history.map(h => h.memory);
+
+      cpuChart.data.labels = labels;
+      cpuChart.data.datasets[0].data = cpuData;
+      cpuChart.update();
+
+      ramChart.data.labels = labels;
+      ramChart.data.datasets[0].data = ramData;
+      ramChart.update();
+    }
+
+    // Helper for progress bar color classes
+    function getPercentColor(pct) {
+      if (pct >= 85) return 'bg-rose-500';
+      if (pct >= 65) return 'bg-amber-500';
+      return 'bg-emerald-500';
+    }
+
+    // Render System KPIs
+    function updateSystemUI(sys) {
+      if (!sys) return;
+
+      elHostname.textContent = sys.hostname || 'localhost';
+      elOsUptime.textContent = `${sys.os} • Uptime: ${sys.uptime}`;
+
+      // CPU
+      const cpuPct = sys.cpu.percent;
+      elKpiCpuValue.textContent = `${cpuPct}%`;
+      elKpiCpuCores.textContent = `${sys.cpu.cores} Cores`;
+      elKpiCpuBar.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
+      elKpiCpuBar.className = `${getPercentColor(cpuPct)} h-1.5 rounded-full transition-all duration-500`;
+      
+      const loadStr = sys.cpu.load_avg ? sys.cpu.load_avg.join(', ') : '0, 0, 0';
+      elKpiCpuLoad.textContent = `Load: ${loadStr}`;
+      elKpiCpuFreq.textContent = sys.cpu.freq_mhz > 0 ? `${sys.cpu.freq_mhz} MHz` : '';
+
+      // RAM
+      const ram = sys.memory;
+      elKpiRamValue.textContent = `${ram.percent}%`;
+      elKpiRamDetail.textContent = `${ram.used_gb} / ${ram.total_gb} GB`;
+      elKpiRamBar.style.width = `${Math.min(100, Math.max(0, ram.percent))}%`;
+      elKpiRamBar.className = `${getPercentColor(ram.percent)} h-1.5 rounded-full transition-all duration-500`;
+      elKpiRamFree.textContent = `${ram.available_gb} GB`;
+      elKpiRamTotal.textContent = `Total: ${ram.total_gb} GB`;
+
+      // Disk
+      const disk = sys.disk;
+      elKpiDiskValue.textContent = `${disk.percent}%`;
+      elKpiDiskDetail.textContent = `${disk.used_gb} / ${disk.total_gb} GB`;
+      elKpiDiskBar.style.width = `${Math.min(100, Math.max(0, disk.percent))}%`;
+      elKpiDiskBar.className = `${getPercentColor(disk.percent)} h-1.5 rounded-full transition-all duration-500`;
+      elKpiDiskFree.textContent = `${disk.free_gb} GB`;
+      elKpiDiskTotal.textContent = `Total: ${disk.total_gb} GB`;
+    }
+
+    // Render Docker Containers
+    function updateDockerUI(docker) {
+      if (!docker) return;
+
+      if (docker.is_demo) {
+        elDockerBanner.classList.remove('hidden');
+        elDockerBanner.className = 'rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-amber-200';
+        document.getElementById('docker-alert-title').textContent = '💡 Modo Demostración Activo (Vista previa local)';
+        elDockerAlertDesc.innerHTML = 'El demonio de Docker no se detectó en esta máquina local. Se muestran contenedores simulados para previsualizar el diseño y métricas. <em>En tu servidor Ubuntu con Docker se listarán automáticamente tus contenedores reales.</em>';
+      } else if (!docker.available) {
+        elDockerBanner.classList.remove('hidden');
+        elDockerBanner.className = 'rounded-xl border border-rose-500/30 bg-rose-950/20 p-4 text-rose-200';
+        document.getElementById('docker-alert-title').textContent = 'Docker no disponible';
+        if (docker.error) {
+          elDockerAlertDesc.textContent = docker.error;
+        }
+      } else {
+        elDockerBanner.classList.add('hidden');
+      }
+
+      elKpiContainersTotal.textContent = docker.total || 0;
+      elKpiContainersRunning.textContent = docker.running || 0;
+      elKpiContainersStopped.textContent = docker.stopped || 0;
+      elContainersCountBadge.textContent = docker.total || 0;
+
+      renderContainersList(docker.containers || []);
+    }
+
+    function renderContainersList(containers) {
+      // Filter by tab and search
+      const filtered = containers.filter(c => {
+        const isRunning = c.status.toLowerCase() === 'running';
+        if (currentFilter === 'running' && !isRunning) return false;
+        if (currentFilter === 'stopped' && isRunning) return false;
+
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchName = c.name.toLowerCase().includes(q);
+          const matchImage = c.image.toLowerCase().includes(q);
+          const matchPorts = c.ports && c.ports.some(p => p.display.toLowerCase().includes(q));
+          return matchName || matchImage || matchPorts;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        elContainersTbody.innerHTML = '';
+        elNoContainersMsg.classList.remove('hidden');
+        return;
+      }
+
+      elNoContainersMsg.classList.add('hidden');
+
+      const currentHostname = window.location.hostname || 'localhost';
+
+      const rowsHtml = filtered.map(c => {
+        const isRunning = c.status.toLowerCase() === 'running';
+
+        // Status Indicator
+        const statusBadge = isRunning
+          ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+               <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-slow shadow-sm shadow-emerald-400"></span>
+               Up
+             </span>`
+          : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+               <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+               Exited
+             </span>`;
+
+        // Ports rendering with direct clickable link
+        let portsHtml = '<span class="text-zinc-500 font-mono text-[11px]">-</span>';
+        if (c.ports && c.ports.length > 0) {
+          portsHtml = `<div class="flex flex-wrap gap-1.5">` + c.ports.map(p => {
+            if (p.link_port) {
+              const url = `http://${currentHostname}:${p.link_port}`;
+              return `<a href="${url}" target="_blank" rel="noopener noreferrer" 
+                         title="Abrir http://${currentHostname}:${p.link_port}"
+                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-600/20 text-emerald-400 hover:text-emerald-300 border border-zinc-700/60 hover:border-emerald-500/40 font-mono text-[11px] transition">
+                        <span>${p.display}</span>
+                        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                      </a>`;
+            } else {
+              return `<span class="px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800 font-mono text-[11px]">${p.display}</span>`;
+            }
+          }).join('') + `</div>`;
+        }
+
+        // CPU progress
+        const cpuPercent = c.cpu_percent || 0;
+        const memPercent = c.memory ? c.memory.percent : 0;
+        const memUsedMb = c.memory ? c.memory.used_mb : 0;
+
+        return `
+          <tr class="hover:bg-zinc-850/40 transition">
+            <!-- Status -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              ${statusBadge}
+            </td>
+
+            <!-- Name & ID -->
+            <td class="py-3 px-4">
+              <div class="font-semibold text-white tracking-tight flex items-center gap-1.5">
+                <span>${c.service_info ? c.service_info.icon : '📦'}</span>
+                <span>${c.name}</span>
+                ${c.service_info && c.service_info.label ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60 font-normal">${c.service_info.label}</span>` : ''}
+              </div>
+              <span class="text-[11px] text-zinc-500 font-mono">${c.id}</span>
+            </td>
+
+            <!-- Image -->
+            <td class="py-3 px-4">
+              <span class="inline-block max-w-[200px] truncate text-zinc-300 font-mono text-[11px] bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800/80" title="${c.image}">
+                ${c.image}
+              </span>
+            </td>
+
+            <!-- CPU -->
+            <td class="py-3 px-4">
+              ${isRunning ? `
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs w-10 text-right ${cpuPercent > 50 ? 'text-amber-400' : 'text-zinc-200'}">${cpuPercent}%</span>
+                  <div class="w-16 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-emerald-400 h-1.5 rounded-full" style="width: ${Math.min(100, cpuPercent)}%"></div>
+                  </div>
+                </div>
+              ` : `<span class="text-zinc-600 font-mono">-</span>`}
+            </td>
+
+            <!-- RAM -->
+            <td class="py-3 px-4">
+              ${isRunning ? `
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-zinc-200">${memUsedMb} MB</span>
+                    <span class="text-[10px] text-zinc-500 font-mono">(${memPercent}%)</span>
+                  </div>
+                  <div class="w-20 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-indigo-400 h-1.5 rounded-full" style="width: ${Math.min(100, memPercent)}%"></div>
+                  </div>
+                </div>
+              ` : `<span class="text-zinc-600 font-mono">-</span>`}
+            </td>
+
+            <!-- Ports -->
+            <td class="py-3 px-4">
+              ${portsHtml}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      elContainersTbody.innerHTML = rowsHtml;
+    }
+
+    // WebSocket connection
+    function connectWebSocket() {
+      if (ws) {
+        try { ws.close(); } catch(e) {}
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/stats`;
+
+      setWsStatus('connecting');
+
+      try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          setWsStatus('connected');
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
+          if (pollingFallbackTimer) {
+            clearInterval(pollingFallbackTimer);
+            pollingFallbackTimer = null;
+          }
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleIncomingData(data);
+          } catch(err) {
+            console.error('Error parsing WS message:', err);
+          }
+        };
+
+        ws.onclose = () => {
+          setWsStatus('disconnected');
+          scheduleReconnect();
+        };
+
+        ws.onerror = () => {
+          setWsStatus('disconnected');
+          ws.close();
+        };
+      } catch (err) {
+        setWsStatus('disconnected');
+        scheduleReconnect();
+      }
+    }
+
+    function setWsStatus(status) {
+      if (status === 'connected') {
+        elWsIndicator.className = 'h-2 w-2 rounded-full bg-emerald-400 animate-pulse';
+        elWsText.textContent = 'En Vivo';
+        elWsText.className = 'text-emerald-400 font-medium';
+        elWsStatus.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-950/40 border border-emerald-500/30';
+      } else if (status === 'connecting') {
+        elWsIndicator.className = 'h-2 w-2 rounded-full bg-amber-400 animate-ping';
+        elWsText.textContent = 'Conectando...';
+        elWsText.className = 'text-amber-400';
+        elWsStatus.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-zinc-800';
+      } else {
+        elWsIndicator.className = 'h-2 w-2 rounded-full bg-rose-500';
+        elWsText.textContent = 'Reconectando';
+        elWsText.className = 'text-rose-400';
+        elWsStatus.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-950/30 border border-rose-500/30';
+      }
+    }
+
+    function scheduleReconnect() {
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          connectWebSocket();
+        }, 3000);
+      }
+      // Start fallback HTTP polling if WS is down
+      if (!pollingFallbackTimer) {
+        pollingFallbackTimer = setInterval(fetchMetricsHTTP, 3000);
+      }
+    }
+
+    // Fallback or Initial HTTP fetch
+    async function fetchMetricsHTTP() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.metrics) {
+          handleIncomingData({
+            type: 'update',
+            metrics: data.metrics,
+            history_point: data.history && data.history.length ? data.history[data.history.length - 1] : null
+          });
+          if (data.history && (!cpuChart.data.labels.length)) {
+            setChartHistory(data.history);
+          }
+        }
+      } catch(err) {
+        console.warn('HTTP fallback error:', err);
+      }
+    }
+
+    function updateServicesUI(services) {
+      const grid = document.getElementById('services-grid');
+      const countEl = document.getElementById('services-online-count');
+      const emptyEl = document.getElementById('services-empty-msg');
+      if (!grid) return;
+
+      if (!services || services.length === 0) {
+        grid.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        if (countEl) countEl.textContent = '0';
+        return;
+      }
+
+      if (emptyEl) emptyEl.classList.add('hidden');
+      if (countEl) countEl.textContent = services.length;
+
+      const currentHostname = window.location.hostname || 'localhost';
+
+      grid.innerHTML = services.map(s => {
+        const isDocker = s.source === 'docker';
+        const hasWebLink = !!s.link_port;
+        const linkUrl = `http://${currentHostname}:${s.link_port}`;
+
+        return `
+          <div class="rounded-lg bg-zinc-950/80 border border-zinc-800/90 p-3.5 flex flex-col justify-between hover:border-zinc-700 transition group">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2 truncate">
+                  <span class="text-base shrink-0">${s.icon || '🔌'}</span>
+                  <h3 class="font-semibold text-xs text-white truncate" title="${s.name}">${s.name}</h3>
+                </div>
+                <span class="text-[10px] px-1.5 py-0.5 rounded font-mono ${isDocker ? 'bg-cyan-950/60 text-cyan-400 border border-cyan-800/40' : 'bg-violet-950/60 text-violet-400 border border-violet-800/40'}">
+                  ${isDocker ? 'Docker' : 'Host'}
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-zinc-400 mb-3">
+                <span class="text-zinc-400 font-mono font-medium">${s.display_port}</span>
+                <span class="text-[10px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">${s.category_label || 'Servicio'}</span>
+              </div>
+            </div>
+            <div>
+              ${hasWebLink ? `
+                <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" 
+                   class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50 transition shadow-sm">
+                  <span>Abrir Servicio</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                </a>
+              ` : `
+                <div class="w-full text-center py-1 rounded bg-zinc-900/60 text-[10px] font-mono text-zinc-500 border border-zinc-800">
+                  Puerto Escuchando
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleIncomingData(data) {
+      if (data.type === 'initial') {
+        fullState = data.metrics;
+        updateSystemUI(fullState.system);
+        updateDockerUI(fullState.docker);
+        updateServicesUI(fullState.discovered_services || []);
+        if (data.history) {
+          setChartHistory(data.history);
+        }
+      } else if (data.type === 'update') {
+        fullState = data.metrics;
+        updateSystemUI(fullState.system);
+        updateDockerUI(fullState.docker);
+        updateServicesUI(fullState.discovered_services || []);
+        if (data.history_point) {
+          pushChartData(data.history_point.time, data.history_point.cpu, data.history_point.memory);
+        }
+      }
+
+      // Update timestamp
+      const now = new Date();
+      elLastUpdate.textContent = now.toLocaleTimeString();
+    }
+
+    // Setup event listeners
+    function setupEvents() {
+      // Search
+      const searchInput = document.getElementById('container-search');
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        if (fullState.docker) {
+          renderContainersList(fullState.docker.containers || []);
+        }
+      });
+
+      // Filter tabs
+      const filterTabs = document.querySelectorAll('.filter-tab');
+      filterTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          filterTabs.forEach(t => {
+            t.className = 'filter-tab px-3 py-1 rounded-md font-medium text-zinc-400 hover:text-white transition';
+          });
+          tab.className = 'filter-tab px-3 py-1 rounded-md font-medium text-white bg-zinc-800 transition';
+          currentFilter = tab.getAttribute('data-filter');
+          if (fullState.docker) {
+            renderContainersList(fullState.docker.containers || []);
+          }
+        });
+      });
+
+      // Refresh button
+      document.getElementById('btn-refresh').addEventListener('click', () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send('refresh');
+        } else {
+          fetchMetricsHTTP();
+        }
+      });
+    }
+
+    // Init on DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      initCharts();
+      setupEvents();
+      fetchMetricsHTTP(); // Instant load
+      connectWebSocket();  // Real-time live connection
+    });
+  </script>
+</body>
+</html>

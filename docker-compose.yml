@@ -1,0 +1,31 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: server-monitor
+    restart: unless-stopped
+    # network_mode: "host" en Ubuntu Server Pro permite:
+    # 1. Escanear autónomamente todos los puertos y servicios TCP activos del host
+    # 2. Rendimiento nativo sin intermediación de proxy/NAT
+    # 3. Acceso directo en http://<ip-ubuntu>:8080
+    network_mode: "host"
+    environment:
+      - PORT=8080
+      - TZ=UTC
+    volumes:
+      # Socket de Docker en modo lectura para escanear contenedores
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Montaje para lectura exacta del disco raíz del servidor
+      - /:/host:ro
+      # Montaje para detectar versión de Ubuntu Server Pro y Hostname
+      - /etc/os-release:/etc/host-os-release:ro
+      - /etc/hostname:/etc/host_hostname:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 48M
