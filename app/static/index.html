@@ -794,106 +794,141 @@
       if (!metrics) return;
       currentMetrics = metrics;
 
-      const sys = metrics.system || {};
-      const doc = metrics.docker || {};
-      const alerts = metrics.alerts || { critical_count: 0, warning_count: 0, items: [] };
-      currentAlerts = alerts;
+      try {
+        const sys = metrics.system || {};
+        const doc = metrics.docker || {};
+        const alerts = metrics.alerts || { critical_count: 0, warning_count: 0, items: [] };
+        currentAlerts = alerts;
 
-      // 1. Header & Host Info
-      const host = sys.hostname || 'ubuntu-server-pro';
-      document.getElementById('header-host-badge').textContent = host;
-      document.getElementById('header-os-badge').textContent = sys.os || 'Linux';
-      document.getElementById('footer-hostname').textContent = host;
+        // 1. Header & Host Info
+        const host = sys.hostname || 'ubuntu-server';
+        const elHHost = document.getElementById('header-host-badge');
+        if (elHHost) elHHost.textContent = host;
+        const elHOs = document.getElementById('header-os-badge');
+        if (elHOs) elHOs.textContent = sys.os || 'Linux';
+        const elFHost = document.getElementById('footer-hostname');
+        if (elFHost) elFHost.textContent = host;
 
-      // 2. Alerts Badges
-      document.getElementById('count-critical').textContent = alerts.critical_count || 0;
-      document.getElementById('count-warning').textContent = alerts.warning_count || 0;
-      const bell = document.getElementById('badge-bell');
-      const totalAlerts = (alerts.critical_count || 0) + (alerts.warning_count || 0);
-      if (totalAlerts > 0) {
-        bell.classList.remove('hidden');
-        bell.textContent = totalAlerts;
-      } else {
-        bell.classList.add('hidden');
+        // 2. Alerts Badges
+        const elCrit = document.getElementById('count-critical');
+        if (elCrit) elCrit.textContent = alerts.critical_count || 0;
+        const elWarn = document.getElementById('count-warning');
+        if (elWarn) elWarn.textContent = alerts.warning_count || 0;
+        
+        const bell = document.getElementById('badge-bell');
+        const totalAlerts = (alerts.critical_count || 0) + (alerts.warning_count || 0);
+        if (bell) {
+          if (totalAlerts > 0) {
+            bell.classList.remove('hidden');
+            bell.textContent = totalAlerts;
+          } else {
+            bell.classList.add('hidden');
+          }
+        }
+
+        // 3. CPU Aggregate Speedometer Radial Gauge
+        const cpuPct = sys.cpu ? Number(sys.cpu.percent || 0) : 0;
+        const elRadVal = document.getElementById('radial-cpu-val');
+        if (elRadVal) elRadVal.textContent = `${cpuPct.toFixed(1)}%`;
+        
+        // Update SVG circle stroke-dashoffset (circumference = 2 * PI * 40 ≈ 251.2)
+        const circumference = 251.2;
+        const offset = circumference - (Math.min(100, Math.max(0, cpuPct)) / 100) * circumference;
+        const circleEl = document.getElementById('radial-cpu-circle');
+        if (circleEl) {
+          circleEl.style.strokeDashoffset = offset;
+          if (cpuPct >= 85) {
+            circleEl.style.stroke = '#f43f5e'; // rose
+          } else if (cpuPct >= 65) {
+            circleEl.style.stroke = '#f59e0b'; // amber
+          } else {
+            circleEl.style.stroke = '#06b6d4'; // cyan
+          }
+        }
+
+        // 4. Per-Core Heatmap Bars
+        renderCoresHeatmap(sys.cpu);
+
+        // 5. Memory
+        const mem = sys.memory || {};
+        const elRamPct = document.getElementById('kpi-ram-pct');
+        if (elRamPct) elRamPct.textContent = `${Number(mem.percent || 0).toFixed(1)}%`;
+        const elRamUsed = document.getElementById('kpi-ram-used');
+        if (elRamUsed) elRamUsed.textContent = mem.used_gb ? `${mem.used_gb} GB` : `${mem.used_mb || 0} MB`;
+        const elRamCached = document.getElementById('kpi-ram-cached');
+        if (elRamCached) elRamCached.textContent = mem.cached_mb ? `${mem.cached_mb} MB` : '--';
+        const elRamFree = document.getElementById('kpi-ram-free');
+        if (elRamFree) elRamFree.textContent = mem.free_mb ? `${mem.free_mb} MB` : `${mem.available_gb || 0} GB`;
+
+        // 6. Load Average
+        const loads = (sys.cpu && sys.cpu.load_avg) ? sys.cpu.load_avg : [0, 0, 0];
+        const elLoad1 = document.getElementById('load-1');
+        if (elLoad1) elLoad1.textContent = Number(loads[0] || 0).toFixed(2);
+        const elLoad5 = document.getElementById('load-5');
+        if (elLoad5) elLoad5.textContent = Number(loads[1] || 0).toFixed(2);
+        const elLoad15 = document.getElementById('load-15');
+        // 7. Disk I/O & Storage
+        const disk = sys.disk || {};
+        const diskIo = disk.io || {};
+        const elDiskPct = document.getElementById('kpi-disk-pct');
+        if (elDiskPct) elDiskPct.textContent = `${Number(disk.percent || 0).toFixed(1)}% (${disk.used_gb || 0}/${disk.total_gb || 0} GB)`;
+        const elDiskRead = document.getElementById('disk-read-rate');
+        if (elDiskRead) elDiskRead.textContent = `${diskIo.read_kbps || 0} KB/s`;
+        const elDiskWrite = document.getElementById('disk-write-rate');
+        if (elDiskWrite) elDiskWrite.textContent = `${diskIo.write_kbps || 0} KB/s`;
+        const elFDiskUsed = document.getElementById('footer-disk-used');
+        if (elFDiskUsed) elFDiskUsed.textContent = `${disk.used_gb || 0} GB`;
+        const elFDiskTotal = document.getElementById('footer-disk-total');
+        if (elFDiskTotal) elFDiskTotal.textContent = `${disk.total_gb || 0} GB`;
+        const elFDiskFree = document.getElementById('footer-disk-free');
+        if (elFDiskFree) elFDiskFree.textContent = `${disk.free_gb || 0} GB`;
+
+        // 8. Network Traffic
+        const net = (sys.network && sys.network.io) ? sys.network.io : {};
+        const elNetIn = document.getElementById('net-in-rate');
+        if (elNetIn) elNetIn.textContent = `↓ ${net.in_kbps || 0} KB/s`;
+        const elNetOut = document.getElementById('net-out-rate');
+        if (elNetOut) elNetOut.textContent = `↑ ${net.out_kbps || 0} KB/s`;
+
+        // 9. System metadata
+        const elSysOs = document.getElementById('kpi-sys-os');
+        if (elSysOs) elSysOs.textContent = sys.os || 'Linux';
+        const elSysUptime = document.getElementById('kpi-sys-uptime');
+        if (elSysUptime) elSysUptime.textContent = sys.uptime || '0h';
+        const elSysHost = document.getElementById('kpi-sys-hostname');
+        if (elSysHost) elSysHost.textContent = host;
+        const elFKernel = document.getElementById('footer-kernel');
+        if (elFKernel) elFKernel.textContent = sys.kernel || 'Linux 6.8.0-generic';
+        const elFHostInfo = document.getElementById('footer-hostinfo');
+        if (elFHostInfo) elFHostInfo.textContent = `${sys.os || 'Linux'} (${sys.cpu ? sys.cpu.cores : 1} Cores)`;
+        const elFAudit = document.getElementById('footer-audit');
+        if (elFAudit) elFAudit.textContent = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+        // 10. Push point to charts
+        pushChartPoint(
+          cpuPct,
+          diskIo.read_kbps || 0,
+          diskIo.write_kbps || 0,
+          net.in_kbps || 0,
+          net.out_kbps || 0
+        );
+
+        // 11. Docker Containers (Dozzle style)
+        renderDockerContainers(doc);
+      } catch (err) {
+        console.error("Error en updateDashboard:", err);
       }
-
-      // 3. CPU Aggregate Speedometer Radial Gauge
-      const cpuPct = sys.cpu ? sys.cpu.percent : 0;
-      document.getElementById('radial-cpu-val').textContent = `${cpuPct.toFixed(1)}%`;
-      
-      // Update SVG circle stroke-dashoffset (circumference = 2 * PI * 40 ≈ 251.2)
-      const circumference = 251.2;
-      const offset = circumference - (cpuPct / 100) * circumference;
-      const circleEl = document.getElementById('radial-cpu-circle');
-      circleEl.style.strokeDashoffset = offset;
-      
-      if (cpuPct >= 85) {
-        circleEl.style.stroke = '#f43f5e'; // rose
-      } else if (cpuPct >= 65) {
-        circleEl.style.stroke = '#f59e0b'; // amber
-      } else {
-        circleEl.style.stroke = '#06b6d4'; // cyan
-      }
-
-      // 4. Per-Core Heatmap Bars
-      renderCoresHeatmap(sys.cpu);
-
-      // 5. Memory
-      const mem = sys.memory || {};
-      document.getElementById('kpi-ram-pct').textContent = `${(mem.percent || 0).toFixed(1)}%`;
-      document.getElementById('kpi-ram-used').textContent = mem.used_gb ? `${mem.used_gb} GB` : `${mem.used_mb || 0} MB`;
-      document.getElementById('kpi-ram-cached').textContent = mem.cached_mb ? `${mem.cached_mb} MB` : '--';
-      document.getElementById('kpi-ram-free').textContent = mem.free_mb ? `${mem.free_mb} MB` : `${mem.available_gb || 0} GB`;
-
-      // 6. Load Average
-      const loads = (sys.cpu && sys.cpu.load_avg) ? sys.cpu.load_avg : [0, 0, 0];
-      document.getElementById('load-1').textContent = Number(loads[0] || 0).toFixed(2);
-      document.getElementById('load-5').textContent = Number(loads[1] || 0).toFixed(2);
-      document.getElementById('load-15').textContent = Number(loads[2] || 0).toFixed(2);
-
-      // 7. Disk I/O & Storage
-      const disk = sys.disk || {};
-      const diskIo = disk.io || {};
-      document.getElementById('kpi-disk-pct').textContent = `${(disk.percent || 0).toFixed(1)}% (${disk.used_gb || 0}/${disk.total_gb || 0} GB)`;
-      document.getElementById('disk-read-rate').textContent = `${diskIo.read_kbps || 0} KB/s`;
-      document.getElementById('disk-write-rate').textContent = `${diskIo.write_kbps || 0} KB/s`;
-      document.getElementById('footer-disk-used').textContent = `${disk.used_gb || 0} GB`;
-      document.getElementById('footer-disk-total').textContent = `${disk.total_gb || 0} GB`;
-      document.getElementById('footer-disk-free').textContent = `${disk.free_gb || 0} GB`;
-
-      // 8. Network Traffic
-      const net = (sys.network && sys.network.io) ? sys.network.io : {};
-      document.getElementById('net-in-rate').textContent = `↓ ${net.in_kbps || 0} KB/s`;
-      document.getElementById('net-out-rate').textContent = `↑ ${net.out_kbps || 0} KB/s`;
-
-      // 9. System metadata
-      document.getElementById('kpi-sys-os').textContent = sys.os || 'Linux';
-      document.getElementById('kpi-sys-uptime').textContent = sys.uptime || '0h';
-      document.getElementById('kpi-sys-hostname').textContent = host;
-      document.getElementById('footer-kernel').textContent = sys.kernel || 'Linux 6.8.0-generic';
-      document.getElementById('footer-hostinfo').textContent = `${sys.os || 'Linux'} (${sys.cpu ? sys.cpu.cores : 1} Cores)`;
-      document.getElementById('footer-audit').textContent = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
-
-      // 10. Push point to charts
-      pushChartPoint(
-        cpuPct,
-        diskIo.read_kbps || 0,
-        diskIo.write_kbps || 0,
-        net.in_kbps || 0,
-        net.out_kbps || 0
-      );
-
-      // 11. Docker Containers (Dozzle style)
-      renderDockerContainers(doc);
     }
 
     // Render Per-Core Heatmap Bars
     function renderCoresHeatmap(cpuInfo) {
       if (!cpuInfo) return;
       const coresContainer = document.getElementById('cores-container');
-      const cores = cpuInfo.cores_percent || [cpuInfo.percent || 0];
-      const freqStr = cpuInfo.freq_mhz > 0 ? ` • ${cpuInfo.freq_mhz} MHz` : '';
-      document.getElementById('cpu-core-summary').textContent = `${cores.length} Cores${freqStr}`;
+      if (!coresContainer) return;
+      const cores = (Array.isArray(cpuInfo.cores_percent) && cpuInfo.cores_percent.length > 0) ? cpuInfo.cores_percent : [cpuInfo.percent || 0];
+      const freqStr = (cpuInfo.freq_mhz && cpuInfo.freq_mhz > 0) ? ` • ${cpuInfo.freq_mhz} MHz` : '';
+      const summaryEl = document.getElementById('cpu-core-summary');
+      if (summaryEl) summaryEl.textContent = `${cores.length} Cores${freqStr}`;
 
       let html = '';
       cores.forEach((pct, idx) => {
@@ -1240,71 +1275,104 @@
     // =========================================================================
     // WEBSOCKET & REST POLLING FALLBACK
     // =========================================================================
+    let isFetchingHttp = false;
+
+    async function fetchMetricsHTTP() {
+      if (isFetchingHttp) return;
+      isFetchingHttp = true;
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.metrics) {
+            updateDashboard(data.metrics);
+            // Si WebSocket no está conectado, el punto azul/cian indica que HTTP Polling está funcionando
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+              const dot = document.getElementById('footer-conn-dot');
+              if (dot) dot.className = 'h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] pulse-dot';
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('HTTP Polling error:', err);
+      } finally {
+        isFetchingHttp = false;
+      }
+    }
+
     function connectWebSocket() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws/stats`;
 
       const dot = document.getElementById('footer-conn-dot');
 
-      ws = new WebSocket(wsUrl);
+      try {
+        ws = new WebSocket(wsUrl);
 
-      ws.onopen = () => {
-        dot.className = 'h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] pulse-dot';
-      };
+        ws.onopen = () => {
+          if (dot) dot.className = 'h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] pulse-dot';
+        };
 
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'initial' || payload.type === 'update') {
-            updateDashboard(payload.metrics);
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload && (payload.type === 'initial' || payload.type === 'update') && payload.metrics) {
+              updateDashboard(payload.metrics);
+            }
+          } catch (err) {
+            console.error('Error parseando mensaje WS:', err);
           }
-        } catch (err) {
-          console.error('Error parseando mensaje WS:', err);
-        }
-      };
+        };
 
-      ws.onclose = () => {
-        dot.className = 'h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]';
-        clearTimeout(wsReconnectTimeout);
-        wsReconnectTimeout = setTimeout(connectWebSocket, 3000);
-      };
+        ws.onclose = () => {
+          if (dot) dot.className = 'h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]';
+          clearTimeout(wsReconnectTimeout);
+          wsReconnectTimeout = setTimeout(connectWebSocket, 3000);
+        };
 
-      ws.onerror = () => {
-        ws.close();
-      };
+        ws.onerror = () => {
+          if (ws) ws.close();
+        };
+      } catch (e) {
+        console.warn('WebSocket connection error:', e);
+      }
     }
 
     // Manual Refresh
     function triggerManualRefresh() {
       const icon = document.getElementById('refresh-icon');
-      icon.classList.add('animate-spin');
-      setTimeout(() => icon.classList.remove('animate-spin'), 1000);
+      if (icon) icon.classList.add('animate-spin');
+      setTimeout(() => { if (icon) icon.classList.remove('animate-spin'); }, 1000);
 
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send('refresh');
       } else {
-        fetch('/api/status')
-          .then(r => r.json())
-          .then(d => {
-            if (d.metrics) updateDashboard(d.metrics);
-          });
+        fetchMetricsHTTP();
       }
     }
 
     // Startup
     document.addEventListener('DOMContentLoaded', () => {
-      initCharts();
+      try {
+        initCharts();
+      } catch (e) {
+        console.warn('Chart.js init warning:', e);
+      }
+
+      // 1. Carga inmediata HTTP
+      fetchMetricsHTTP();
+
+      // 2. Conectar WebSocket para tiempo real
       connectWebSocket();
 
-      // Initial HTTP fetch to prevent blank state
-      fetch('/api/status')
-        .then(r => r.json())
-        .then(d => {
-          if (d.metrics) updateDashboard(d.metrics);
-        })
-        .catch(() => {});
+      // 3. Fallback continuo cada 2 segundos si WebSocket se desconecta
+      setInterval(() => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          fetchMetricsHTTP();
+        }
+      }, 2000);
 
-      // Check updates on boot
+      // 4. Comprobar actualizaciones
       checkUpdates();
     });
   </script>

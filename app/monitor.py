@@ -34,9 +34,23 @@ def format_uptime(seconds: float) -> str:
     return " ".join(parts) if parts else "< 1m"
 
 
+def get_host_name() -> str:
+    """Detecta el hostname real del host anfitrión si corre dentro de un contenedor Docker."""
+    for path in ['/etc/host_hostname', '/host/etc/hostname', '/etc/hostname']:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    name = f.read().strip()
+                    if name:
+                        return name
+            except Exception:
+                pass
+    return socket.gethostname()
+
+
 def get_detailed_os() -> str:
     """Detecta el nombre detallado del SO, leyendo /etc/host-os-release si corre dentro de Docker en Ubuntu."""
-    for path in ['/etc/host-os-release', '/etc/os-release']:
+    for path in ['/etc/host-os-release', '/host/etc/os-release', '/etc/os-release']:
         if os.path.exists(path):
             try:
                 with open(path, 'r', encoding='utf-8') as f:
@@ -198,64 +212,89 @@ def get_io_rates() -> tuple:
 
 
 def get_system_metrics() -> dict:
-    """Recolecta las métricas de rendimiento del host en tiempo real."""
+    """Recolecta las métricas de rendimiento del host en tiempo real con máxima tolerancia a fallos."""
     # CPU usage general y por núcleo
-    cpu_percent = psutil.cpu_percent(interval=None)
-    cpu_cores = psutil.cpu_percent(interval=None, percpu=True)
-    if not cpu_cores:
+    try:
+        cpu_percent = float(psutil.cpu_percent(interval=None))
+    except Exception:
+        cpu_percent = 0.0
+
+    try:
+        cpu_cores = psutil.cpu_percent(interval=None, percpu=True)
+        if not cpu_cores:
+            cpu_cores = [cpu_percent]
+    except Exception:
         cpu_cores = [cpu_percent]
 
-    cpu_count = psutil.cpu_count(logical=True)
-    cpu_freq = psutil.cpu_freq()
-    freq_current = round(cpu_freq.current, 0) if cpu_freq else 0
+    try:
+        cpu_count = psutil.cpu_count(logical=True) or len(cpu_cores) or 1
+    except Exception:
+        cpu_count = len(cpu_cores) or 1
+
+    freq_current = 0
+    try:
+        cf = psutil.cpu_freq()
+        if cf and hasattr(cf, 'current') and cf.current:
+            freq_current = round(cf.current, 0)
+    except Exception:
+        freq_current = 0
 
     # Memory usage detallado
-    vm = psutil.virtual_memory()
-    mem_total_gb = round(vm.total / (1024 ** 3), 2)
-    mem_used_gb = round(vm.used / (1024 ** 3), 2)
-    mem_available_gb = round(vm.available / (1024 ** 3), 2)
-    cached_bytes = getattr(vm, 'cached', 0) or getattr(vm, 'buffers', 0)
-    mem_cached_mb = round(cached_bytes / (1024 * 1024), 1)
-    mem_free_mb = round(vm.free / (1024 * 1024), 1)
-    mem_used_mb = round(vm.used / (1024 * 1024), 1)
-    mem_percent = vm.percent
+    try:
+        vm = psutil.virtual_memory()
+        mem_total_gb = round(vm.total / (1024 ** 3), 2)
+        mem_used_gb = round(vm.used / (1024 ** 3), 2)
+        mem_available_gb = round(vm.available / (1024 ** 3), 2)
+        cached_bytes = getattr(vm, 'cached', 0) or getattr(vm, 'buffers', 0) or 0
+        mem_cached_mb = round(cached_bytes / (1024 * 1024), 1)
+        mem_free_mb = round(vm.free / (1024 * 1024), 1)
+        mem_used_mb = round(vm.used / (1024 * 1024), 1)
+        mem_percent = float(vm.percent)
+    except Exception:
+        mem_total_gb, mem_used_gb, mem_available_gb = 0.0, 0.0, 0.0
+        mem_cached_mb, mem_free_mb, mem_used_mb, mem_percent = 0.0, 0.0, 0.0, 0.0
 
     # Disk usage (check /host if mounted inside docker container, otherwise root / or windows drive)
+    disk_path = '/'
     if os.path.exists('/host') and os.path.isdir('/host'):
         disk_path = '/host'
-    elif os.name != 'nt':
-        disk_path = '/'
-    else:
+    elif os.name == 'nt':
         disk_path = os.path.splitdrive(os.getcwd())[0] + '\\'
+
     try:
         disk = psutil.disk_usage(disk_path)
         disk_total_gb = round(disk.total / (1024 ** 3), 2)
         disk_used_gb = round(disk.used / (1024 ** 3), 2)
         disk_free_gb = round(disk.free / (1024 ** 3), 2)
-        disk_percent = disk.percent
+        disk_percent = float(disk.percent)
     except Exception:
-        disk_total_gb = 0
-        disk_used_gb = 0
-        disk_free_gb = 0
-        disk_percent = 0
+        disk_total_gb, disk_used_gb, disk_free_gb, disk_percent = 0.0, 0.0, 0.0, 0.0
 
     # Load average (Linux/Unix)
     load_avg = [0.0, 0.0, 0.0]
     if hasattr(psutil, "getloadavg"):
         try:
-            load_avg = [round(x, 2) for x in psutil.getloadavg()]
+            load_avg = [round(float(x), 2) for x in psutil.getloadavg()]
         except Exception:
-            pass
+            load_avg = [0.0, 0.0, 0.0]
 
     # Tasas de I/O de disco y tráfico de red
-    disk_io, net_io = get_io_rates()
+    try:
+        disk_io, net_io = get_io_rates()
+    except Exception:
+        disk_io = {"read_kbps": 0.0, "write_kbps": 0.0}
+        net_io = {"in_kbps": 0.0, "out_kbps": 0.0}
 
     # Uptime
-    boot_time = psutil.boot_time()
-    uptime_seconds = time.time() - boot_time
+    uptime_seconds = 0
+    try:
+        boot_time = psutil.boot_time()
+        uptime_seconds = max(0, time.time() - boot_time)
+    except Exception:
+        uptime_seconds = 0
 
     return {
-        "hostname": socket.gethostname(),
+        "hostname": get_host_name(),
         "os": get_detailed_os(),
         "kernel": f"{platform.system()} {platform.release()}",
         "uptime": format_uptime(uptime_seconds),
@@ -571,63 +610,85 @@ def get_docker_metrics() -> dict:
     running_containers_to_stat = []
 
     for c in raw_containers:
-        status = c.status.lower()
-        is_running = status == "running"
-        if is_running:
-            running_count += 1
-            running_containers_to_stat.append(c)
-        else:
-            stopped_count += 1
+        try:
+            status = getattr(c, 'status', 'unknown').lower()
+            is_running = status == "running"
+            if is_running:
+                running_count += 1
+                running_containers_to_stat.append(c)
+            else:
+                stopped_count += 1
 
-        name = c.name.lstrip("/")
-        image_tags = c.image.tags
-        image_name = image_tags[0] if image_tags else (c.attrs.get("Config", {}).get("Image") or c.image.short_id)
-        health_info = c.attrs.get("State", {}).get("Health", {})
-        health_status = health_info.get("Status") if health_info else None
-        ports = parse_ports(c.attrs)
+            name = getattr(c, 'name', 'container').lstrip("/")
+            attrs = getattr(c, 'attrs', {}) or {}
+            
+            # Obtención ultra-segura de imagen sin llamar a Docker API si no es necesario
+            image_name = "unknown"
+            try:
+                cfg_image = attrs.get("Config", {}).get("Image")
+                if cfg_image:
+                    image_name = cfg_image
+                elif hasattr(c, 'image') and c.image:
+                    tags = getattr(c.image, 'tags', [])
+                    image_name = tags[0] if tags else getattr(c.image, 'short_id', 'unknown')
+            except Exception:
+                image_name = attrs.get("Config", {}).get("Image") or "unknown"
 
-        containers_data.append({
-            "id": c.short_id,
-            "full_id": c.id,
-            "name": name,
-            "image": image_name,
-            "status": c.status,
-            "state": c.attrs.get("State", {}).get("Status", c.status),
-            "health": health_status,
-            "created": c.attrs.get("Created", ""),
-            "ports": ports,
-            "service_info": categorize_service(image_name, name),
-            "cpu_percent": 0.0,
-            "memory": {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0}
-        })
+            health_info = attrs.get("State", {}).get("Health", {}) if attrs else {}
+            health_status = health_info.get("Status") if health_info else None
+            ports = parse_ports(attrs)
 
-    # Consulta concurrente de estadísticas para contenedores en ejecución
+            containers_data.append({
+                "id": getattr(c, 'short_id', name),
+                "full_id": getattr(c, 'id', name),
+                "name": name,
+                "image": image_name,
+                "status": getattr(c, 'status', 'unknown'),
+                "state": attrs.get("State", {}).get("Status", getattr(c, 'status', 'unknown')),
+                "health": health_status,
+                "created": attrs.get("Created", ""),
+                "ports": ports,
+                "service_info": categorize_service(image_name, name),
+                "cpu_percent": 0.0,
+                "memory": {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0}
+            })
+        except Exception:
+            continue
+
+    # Consulta concurrente de estadísticas con timeout protegido
     stats_map = {}
     if running_containers_to_stat:
-        with ThreadPoolExecutor(max_workers=min(10, len(running_containers_to_stat))) as executor:
-            future_to_id = {
-                executor.submit(fetch_container_stats, c): c.short_id
-                for c in running_containers_to_stat
-            }
-            for future in as_completed(future_to_id, timeout=2.5):
-                cid = future_to_id[future]
+        try:
+            with ThreadPoolExecutor(max_workers=min(8, len(running_containers_to_stat))) as executor:
+                future_to_id = {
+                    executor.submit(fetch_container_stats, c): getattr(c, 'short_id', getattr(c, 'name', 'unknown'))
+                    for c in running_containers_to_stat
+                }
                 try:
-                    stats_map[cid] = future.result()
+                    for future in as_completed(future_to_id, timeout=2.0):
+                        cid = future_to_id[future]
+                        try:
+                            stats_map[cid] = future.result()
+                        except Exception:
+                            stats_map[cid] = {
+                                "cpu_percent": 0.0,
+                                "memory": {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0}
+                            }
                 except Exception:
-                    stats_map[cid] = {
-                        "cpu_percent": 0.0,
-                        "memory": {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0}
-                    }
+                    # TimeoutError de as_completed no interrumpe el dashboard
+                    pass
+        except Exception:
+            pass
 
     # Integrar estadísticas obtenidas
     for c_info in containers_data:
         cid = c_info["id"]
         if cid in stats_map:
-            c_info["cpu_percent"] = stats_map[cid]["cpu_percent"]
-            c_info["memory"] = stats_map[cid]["memory"]
+            c_info["cpu_percent"] = stats_map[cid].get("cpu_percent", 0.0)
+            c_info["memory"] = stats_map[cid].get("memory", {"used_mb": 0.0, "limit_mb": 0.0, "percent": 0.0})
 
     # Ordenar: primero los activos, luego alfabéticamente
-    containers_data.sort(key=lambda x: (x["status"] != "running", x["name"].lower()))
+    containers_data.sort(key=lambda x: (x["status"].lower() != "running", x["name"].lower()))
 
     return {
         "available": True,
@@ -777,58 +838,95 @@ def compute_alerts(system: dict, docker: dict) -> dict:
 
 
 def get_full_metrics() -> dict:
-    """Retorna el paquete consolidado de métricas de host, Docker y servicios autodetectados."""
-    sys = get_system_metrics()
-    doc = get_docker_metrics()
-    host_services = scan_host_listening_services()
-    alerts = compute_alerts(sys, doc)
+    """Retorna el paquete consolidado de métricas de host, Docker y servicios autodetectados con tolerancia a fallos."""
+    try:
+        sys = get_system_metrics()
+    except Exception as e:
+        sys = {
+            "hostname": get_host_name(),
+            "os": get_detailed_os(),
+            "kernel": f"{platform.system()} {platform.release()}",
+            "uptime": "0m",
+            "uptime_seconds": 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "cpu": {"percent": 0.0, "cores": 1, "cores_percent": [0.0], "freq_mhz": 0, "load_avg": [0.0, 0.0, 0.0]},
+            "memory": {"total_gb": 0.0, "used_gb": 0.0, "available_gb": 0.0, "used_mb": 0.0, "cached_mb": 0.0, "free_mb": 0.0, "percent": 0.0},
+            "disk": {"path": "/", "total_gb": 0.0, "used_gb": 0.0, "free_gb": 0.0, "percent": 0.0, "io": {"read_kbps": 0.0, "write_kbps": 0.0}},
+            "network": {"io": {"in_kbps": 0.0, "out_kbps": 0.0}}
+        }
+
+    try:
+        doc = get_docker_metrics()
+    except Exception as e:
+        demo_containers = get_demo_containers()
+        doc = {
+            "available": False,
+            "is_demo": True,
+            "error": str(e),
+            "total": len(demo_containers),
+            "running": len(demo_containers),
+            "stopped": 0,
+            "containers": demo_containers
+        }
+
+    try:
+        host_services = scan_host_listening_services()
+    except Exception:
+        host_services = []
+
+    try:
+        alerts = compute_alerts(sys, doc)
+    except Exception:
+        alerts = {"critical_count": 0, "warning_count": 0, "total_count": 0, "items": []}
 
     # Consolidar escaneo de servicios web detectados (tanto de Docker como de Host)
     discovered_services = []
     seen_web_ports = set()
 
-    # 1. Servicios descubiertos a partir de contenedores Docker en ejecución
-    for c in doc.get("containers", []):
-        if c.get("status", "").lower() == "running":
-            # Asegurar que tenga service_info
-            s_info = c.get("service_info") or categorize_service(c.get("image", ""), c.get("name", ""))
-            for p in c.get("ports", []):
-                ext_port = p.get("external")
-                if ext_port:
-                    try:
-                        ext_num = int(ext_port)
-                        seen_web_ports.add(ext_num)
-                        discovered_services.append({
-                            "name": c["name"],
-                            "source": "docker",
-                            "port": ext_num,
-                            "display_port": p.get("display", f"{ext_num}/tcp"),
-                            "category": s_info.get("category", "general"),
-                            "category_label": s_info.get("label", "Docker App"),
-                            "icon": s_info.get("icon", "🐳"),
-                            "link_port": ext_num,
-                            "status": "running"
-                        })
-                    except Exception:
-                        pass
+    try:
+        # 1. Servicios descubiertos a partir de contenedores Docker en ejecución
+        for c in doc.get("containers", []):
+            if c.get("status", "").lower() == "running":
+                s_info = c.get("service_info") or categorize_service(c.get("image", ""), c.get("name", ""))
+                for p in c.get("ports", []):
+                    ext_port = p.get("external")
+                    if ext_port:
+                        try:
+                            ext_num = int(ext_port)
+                            seen_web_ports.add(ext_num)
+                            discovered_services.append({
+                                "name": c["name"],
+                                "source": "docker",
+                                "port": ext_num,
+                                "display_port": p.get("display", f"{ext_num}/tcp"),
+                                "category": s_info.get("category", "general"),
+                                "category_label": s_info.get("label", "Docker App"),
+                                "icon": s_info.get("icon", "🐳"),
+                                "link_port": ext_num,
+                                "status": "running"
+                            })
+                        except Exception:
+                            pass
 
-    # 2. Servicios nativos del Host notables o con puerto web que no estén ya cubiertos por Docker
-    for h in host_services:
-        if h["port"] not in seen_web_ports and (h["is_web"] or h["port"] in KNOWN_PORT_SERVICES):
-            discovered_services.append({
-                "name": h["process"] if h["process"] not in ["System", "Desconocido"] else h["description"],
-                "source": "host",
-                "port": h["port"],
-                "display_port": f"{h['port']}/tcp",
-                "category": h["category"],
-                "category_label": "Servicio Host",
-                "icon": h["icon"],
-                "link_port": h["link_port"],
-                "status": "listening"
-            })
+        # 2. Servicios nativos del Host notables o con puerto web que no estén ya cubiertos por Docker
+        for h in host_services:
+            if h["port"] not in seen_web_ports and (h.get("is_web") or h["port"] in KNOWN_PORT_SERVICES):
+                discovered_services.append({
+                    "name": h["process"] if h.get("process") not in ["System", "Desconocido"] else h.get("description", "Servicio"),
+                    "source": "host",
+                    "port": h["port"],
+                    "display_port": f"{h['port']}/tcp",
+                    "category": h.get("category", "general"),
+                    "category_label": "Servicio Host",
+                    "icon": h.get("icon", "🔌"),
+                    "link_port": h.get("link_port"),
+                    "status": "listening"
+                })
 
-    # Ordenar servicios por número de puerto
-    discovered_services.sort(key=lambda s: s["port"])
+        # Ordenar servicios por número de puerto
+        discovered_services.sort(key=lambda s: s["port"])
+    except Exception:
+        pass
 
     return {
         "system": sys,

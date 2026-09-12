@@ -83,8 +83,8 @@ async def metrics_collector_loop():
             now = datetime.now()
             history_entry = {
                 "time": now.strftime("%H:%M:%S"),
-                "cpu": metrics["system"]["cpu"]["percent"],
-                "memory": metrics["system"]["memory"]["percent"]
+                "cpu": metrics.get("system", {}).get("cpu", {}).get("percent", 0.0),
+                "memory": metrics.get("system", {}).get("memory", {}).get("percent", 0.0)
             }
             metrics_history.append(history_entry)
 
@@ -107,12 +107,12 @@ async def startup_event():
     # Inicializar primera recolección de métricas
     global latest_metrics
     try:
-        latest_metrics = get_full_metrics()
+        latest_metrics = await asyncio.to_thread(get_full_metrics)
         now = datetime.now()
         metrics_history.append({
             "time": now.strftime("%H:%M:%S"),
-            "cpu": latest_metrics["system"]["cpu"]["percent"],
-            "memory": latest_metrics["system"]["memory"]["percent"]
+            "cpu": latest_metrics.get("system", {}).get("cpu", {}).get("percent", 0.0),
+            "memory": latest_metrics.get("system", {}).get("memory", {}).get("percent", 0.0)
         })
     except Exception as e:
         logger.warning(f"Error inicializando métricas en startup: {e}")
@@ -132,13 +132,16 @@ async def root():
 
 @app.get("/api/status")
 async def api_status():
-    """Retorna estado actual completo y el historial de métricas."""
+    """Retorna estado actual completo y el historial de métricas con tolerancia a fallos."""
     global latest_metrics
     if not latest_metrics:
-        latest_metrics = get_full_metrics()
+        try:
+            latest_metrics = await asyncio.to_thread(get_full_metrics)
+        except Exception as e:
+            logger.error(f"Error cargando métricas en /api/status: {e}")
     return {
         "status": "online",
-        "metrics": latest_metrics,
+        "metrics": latest_metrics or {},
         "history": list(metrics_history)
     }
 
@@ -266,9 +269,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         # Enviar estado inicial completo con el historial para renderizar gráficas de inmediato
+        metrics = latest_metrics if latest_metrics else await asyncio.to_thread(get_full_metrics)
         initial_payload = {
             "type": "initial",
-            "metrics": latest_metrics if latest_metrics else get_full_metrics(),
+            "metrics": metrics or {},
             "history": list(metrics_history)
         }
         await websocket.send_text(json.dumps(initial_payload))
