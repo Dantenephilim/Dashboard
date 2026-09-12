@@ -421,12 +421,34 @@
           </div>
         </div>
 
+        <!-- DEDICATED HOST & SYSTEM SERVICES PANEL (APACHE, NESSUS & PUERTOS) -->
+        <div class="bg-[#090e17]/90 border border-slate-800/90 rounded-lg p-2 flex flex-col gap-1.5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 font-mono text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+              <span class="text-emerald-400">🌐</span>
+              <span>SERVICIOS NATIVOS DEL SERVIDOR (UBUNTU HOST)</span>
+            </div>
+            <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">Detección Host & Puertos</span>
+          </div>
+
+          <!-- Cards Grid for Apache & Nessus -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="system-services-cards">
+            <!-- Rendered by JavaScript: Apache & Nessus Live Status Cards -->
+            <div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-500 font-mono text-[10px] flex items-center gap-2">
+              <span class="animate-pulse">🪶</span> Escaneando Apache...
+            </div>
+            <div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-500 font-mono text-[10px] flex items-center gap-2">
+              <span class="animate-pulse">🛡️</span> Escaneando Nessus...
+            </div>
+          </div>
+        </div>
+
         <!-- Filter / Search Toolbar -->
         <div class="flex flex-wrap items-center justify-between gap-2 bg-[#090e17]/80 border border-slate-800/80 rounded p-1.5">
           
           <!-- Search input -->
           <div class="relative flex-1 min-w-[180px]">
-            <input type="text" id="search-container" placeholder="Buscar por nombre, imagen o puerto..." 
+            <input type="text" id="search-container" placeholder="Buscar por nombre, servicio, imagen o puerto..." 
                    class="w-full bg-slate-900/90 border border-slate-700/80 rounded px-2.5 py-1 text-slate-200 placeholder-slate-500 text-[11px] font-mono focus:outline-none focus:border-cyan-500 transition">
             <svg class="w-3.5 h-3.5 absolute right-2.5 top-2 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
@@ -434,8 +456,10 @@
           <!-- Category / Status Filters -->
           <div class="flex items-center gap-1 font-mono text-[10px]">
             <button onclick="setFilter('all')" class="filter-btn active px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40" data-filter="all">Todos</button>
+            <button onclick="setFilter('docker')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="docker">🐳 Docker</button>
+            <button onclick="setFilter('host')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="host">🌐 Host</button>
             <button onclick="setFilter('running')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="running">Activos</button>
-            <button onclick="setFilter('alert')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Con Alertas</button>
+            <button onclick="setFilter('alert')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Alertas</button>
           </div>
         </div>
 
@@ -1027,7 +1051,10 @@
           net.out_kbps || 0
         );
 
-        // 11. Docker Containers (Dozzle style)
+        // 11. Host & System Services Cards (Apache & Nessus)
+        renderSystemServicesCards(metrics.system_services, metrics);
+
+        // 12. Docker Containers & Host Services Table
         renderDockerContainers(doc);
       } catch (err) {
         console.error("Error en updateDashboard:", err);
@@ -1060,15 +1087,93 @@
       coresContainer.innerHTML = html;
     }
 
+    // Render Dedicated System Services Cards (Apache & Nessus)
+    function renderSystemServicesCards(services, metrics) {
+      const cardsContainer = document.getElementById('system-services-cards');
+      if (!cardsContainer) return;
+
+      const host = window.location.hostname || 'localhost';
+      const srv = services || (metrics && metrics.system_services) || (currentMetrics && currentMetrics.system_services) || {};
+
+      const ap = srv.apache || { name: 'Apache HTTP Server', icon: '🪶', status: 'OFFLINE', port: 80, running: false, description: 'Puerto 80/443 no detectado' };
+      const ns = srv.nessus || { name: 'Tenable Nessus Scanner', icon: '🛡️', status: 'OFFLINE', port: 8834, running: false, description: 'Puerto 8834 no detectado' };
+
+      const apRunning = Boolean(ap.running || ap.status === 'RUNNING');
+      const apPort = ap.port || 80;
+      const apUrl = `http://${host}:${apPort}`;
+      const apStatusBadge = apRunning 
+        ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block"></span>RUNNING</span>`
+        : (ap.status === 'STOPPED' 
+            ? `<span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-900/80 border border-rose-700 text-rose-300">STOPPED</span>`
+            : `<span class="px-2 py-0.5 rounded text-[9px] font-mono text-slate-400 bg-slate-800 border border-slate-700">INACTIVO</span>`);
+
+      const nsRunning = Boolean(ns.running || ns.status === 'RUNNING');
+      const nsPort = ns.port || 8834;
+      const nsUrl = `https://${host}:${nsPort}`;
+      const nsStatusBadge = nsRunning 
+        ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block"></span>RUNNING</span>`
+        : (ns.status === 'STOPPED' 
+            ? `<span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-900/80 border border-rose-700 text-rose-300">STOPPED</span>`
+            : `<span class="px-2 py-0.5 rounded text-[9px] font-mono text-slate-400 bg-slate-800 border border-slate-700">INACTIVO</span>`);
+
+      cardsContainer.innerHTML = `
+        <!-- Apache Card -->
+        <div class="p-2.5 rounded-md bg-[#0a0f1a] border ${apRunning ? 'border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'border-slate-800'} flex items-center justify-between transition">
+          <div class="flex items-center gap-2.5 overflow-hidden">
+            <span class="text-2xl flex-shrink-0">🪶</span>
+            <div class="flex flex-col truncate">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-slate-100 text-xs truncate">Apache Server</span>
+                ${apStatusBadge}
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono truncate">${ap.description || 'Puerto 80/443 TCP'}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0 ml-2">
+            ${apRunning ? `
+              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white font-mono text-[10px] font-bold transition flex items-center gap-1" title="Abrir Apache en el navegador">
+                Abrir Web ↗
+              </a>
+            ` : `
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-900 border border-slate-800">Puerto 80</span>
+            `}
+          </div>
+        </div>
+
+        <!-- Nessus Card -->
+        <div class="p-2.5 rounded-md bg-[#0a0f1a] border ${nsRunning ? 'border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'border-slate-800'} flex items-center justify-between transition">
+          <div class="flex items-center gap-2.5 overflow-hidden">
+            <span class="text-2xl flex-shrink-0">🛡️</span>
+            <div class="flex flex-col truncate">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-slate-100 text-xs truncate">Nessus Scanner</span>
+                ${nsStatusBadge}
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono truncate">${ns.description || 'Puerto 8834 HTTPS'}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0 ml-2">
+            ${nsRunning ? `
+              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white font-mono text-[10px] font-bold transition flex items-center gap-1" title="Abrir consola web de Nessus">
+                Abrir Nessus ↗
+              </a>
+            ` : `
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-900 border border-slate-800">Puerto 8834</span>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
     let lastContainerFingerprint = '';
 
-    // Render Docker Containers (Dozzle style)
+    // Render Docker Containers & Host Services (Apache, Nessus, etc.)
     function renderDockerContainers(docker) {
       const containerListEl = document.getElementById('containers-list');
       const countBadge = document.getElementById('container-count-badge');
       const demoBanner = document.getElementById('demo-banner');
 
-      if (!docker || !docker.containers) {
+      if (!docker) {
         containerListEl.innerHTML = '<div class="text-center py-6 text-slate-500 font-mono">No se detectó Docker daemon.</div>';
         lastContainerFingerprint = '';
         return;
@@ -1080,38 +1185,127 @@
         demoBanner.classList.add('hidden');
       }
 
-      countBadge.textContent = `${docker.running || 0} Running | ${docker.stopped || 0} Stopped`;
+      const host = window.location.hostname || 'localhost';
 
-      // Filter containers
+      // 1. Construir lista de servicios nativos del host (Apache, Nessus, y puertos del host)
+      const hostServicesList = [];
+      const srv = (currentMetrics && currentMetrics.system_services) || {};
+
+      // Apache Host Service
+      if (srv.apache) {
+        const ap = srv.apache;
+        const apRunning = Boolean(ap.running || ap.status === 'RUNNING');
+        hostServicesList.push({
+          id: 'host-apache',
+          name: ap.name || 'Apache HTTP Server',
+          image: ap.description || 'Apache Web Server (Ubuntu Host)',
+          is_host: true,
+          status: apRunning ? 'running' : (ap.status === 'STOPPED' ? 'stopped' : 'stopped'),
+          health: apRunning ? 'healthy' : '',
+          ports: [{
+            link_port: ap.port || 80,
+            internal: ap.port || 80,
+            protocol: ap.protocol || 'tcp'
+          }],
+          service_info: { icon: '🪶', label: 'Apache Web Server' },
+          cpu_percent: 0,
+          memory: { used_mb: 0 },
+          url: `http://${host}:${ap.port || 80}`
+        });
+      }
+
+      // Nessus Host Service
+      if (srv.nessus) {
+        const ns = srv.nessus;
+        const nsRunning = Boolean(ns.running || ns.status === 'RUNNING');
+        hostServicesList.push({
+          id: 'host-nessus',
+          name: ns.name || 'Tenable Nessus Scanner',
+          image: ns.description || 'Nessus Vulnerability Scanner (Ubuntu Host)',
+          is_host: true,
+          status: nsRunning ? 'running' : (ns.status === 'STOPPED' ? 'stopped' : 'stopped'),
+          health: nsRunning ? 'healthy' : '',
+          ports: [{
+            link_port: ns.port || 8834,
+            internal: ns.port || 8834,
+            protocol: 'tcp'
+          }],
+          service_info: { icon: '🛡️', label: 'Tenable Nessus' },
+          cpu_percent: 0,
+          memory: { used_mb: 0 },
+          url: `https://${host}:${ns.port || 8834}`
+        });
+      }
+
+      // Otros puertos notables del host
+      const hostRaw = (currentMetrics && currentMetrics.host_services) || [];
+      hostRaw.forEach(h => {
+        if (![80, 443, 8090, 8834].includes(h.port)) {
+          hostServicesList.push({
+            id: `host-port-${h.port}`,
+            name: h.description || `Servicio Puerto ${h.port}`,
+            image: `Puerto ${h.port}/tcp • ${h.process || 'Host Service'}`,
+            is_host: true,
+            status: 'running',
+            health: 'healthy',
+            ports: [{
+              link_port: h.link_port || h.port,
+              internal: h.port,
+              protocol: 'tcp'
+            }],
+            service_info: { icon: h.icon || '🌐', label: h.category || 'Servicio Host' },
+            cpu_percent: 0,
+            memory: { used_mb: 0 },
+            url: `http://${host}:${h.link_port || h.port}`
+          });
+        }
+      });
+
+      // Filter selection
       const query = (document.getElementById('search-container').value || '').toLowerCase().trim();
-      let list = docker.containers;
+      const dockerContainers = docker.containers || [];
+      let list = [];
+
+      if (currentFilter === 'docker') {
+        list = [...dockerContainers];
+      } else if (currentFilter === 'host') {
+        list = [...hostServicesList];
+      } else {
+        // 'all', 'running', 'alert'
+        list = [...hostServicesList, ...dockerContainers];
+      }
 
       if (currentFilter === 'running') {
         list = list.filter(c => (c.status || '').toLowerCase() === 'running');
       } else if (currentFilter === 'alert') {
-        list = list.filter(c => (c.health || '').toLowerCase() === 'unhealthy' || (c.status || '').toLowerCase() === 'restarting' || (c.status || '').toLowerCase() === 'exited');
+        list = list.filter(c => (c.health || '').toLowerCase() === 'unhealthy' || (c.status || '').toLowerCase() === 'restarting' || (c.status || '').toLowerCase() === 'exited' || (c.status || '').toLowerCase() === 'stopped');
       }
 
       if (query) {
         list = list.filter(c => 
           (c.name || '').toLowerCase().includes(query) ||
           (c.image || '').toLowerCase().includes(query) ||
-          (c.ports || []).some(p => (p.display || '').toLowerCase().includes(query))
+          (c.ports || []).some(p => String(p.link_port || p.internal || p.display || '').toLowerCase().includes(query))
         );
       }
 
+      const runningDocker = docker.running || 0;
+      const runningHost = hostServicesList.filter(h => h.status === 'running').length;
+      countBadge.textContent = `${runningDocker} Docker • ${runningHost} Host Activos`;
+
       if (list.length === 0) {
-        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay contenedores que coincidan con el filtro.</div>';
+        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay servicios o contenedores que coincidan con el filtro.</div>';
         lastContainerFingerprint = '';
         return;
       }
 
-      // Compute fingerprint to avoid unnecessary full DOM rebuilds (keeps CSS wave animations flowing smoothly without resets!)
-      const currentFingerprint = list.map(c => `${c.id}:${c.status}:${c.health}:${c.ports ? c.ports.map(p=>p.link_port||p.internal).join(',') : ''}`).join('|');
+      // Compute fingerprint to avoid unnecessary full DOM rebuilds
+      const currentFingerprint = `${currentFilter}:${query}:` + list.map(c => `${c.id}:${c.status}:${c.health}:${c.ports ? c.ports.map(p=>p.link_port||p.internal).join(',') : ''}`).join('|');
 
       if (currentFingerprint === lastContainerFingerprint && containerListEl.children.length === list.length) {
         // In-place metric update: preserves running CSS animations smoothly at 60 FPS
         list.forEach(c => {
+          if (c.is_host) return; // Host services don't have container stats
           const isRunning = (c.status || '').toLowerCase() === 'running';
           const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
           const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
@@ -1151,7 +1345,6 @@
       list.forEach(c => {
         const isRunning = (c.status || '').toLowerCase() === 'running';
         const isRestarting = (c.status || '').toLowerCase() === 'restarting';
-        const isStopped = !isRunning && !isRestarting;
 
         // Status pill
         let statusBadge = '';
@@ -1163,98 +1356,146 @@
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-700 text-white tracking-wide">STOPPED</span>`;
         }
 
-        // Health Tag
+        // Health / Source Tag
         let healthTag = '';
-        const health = (c.health || '').toLowerCase();
-        if (health === 'healthy') {
-          healthTag = `<span class="text-[9px] text-emerald-400 font-mono">● Saludable</span>`;
-        } else if (health === 'unhealthy') {
-          healthTag = `<span class="text-[9px] text-rose-400 font-mono font-bold animate-pulse">⚠ UNHEALTHY</span>`;
+        if (c.is_host) {
+          healthTag = `<span class="text-[9px] text-cyan-400 font-mono font-semibold">UBUNTU HOST</span>`;
+        } else {
+          const health = (c.health || '').toLowerCase();
+          if (health === 'healthy') {
+            healthTag = `<span class="text-[9px] text-emerald-400 font-mono">● Saludable</span>`;
+          } else if (health === 'unhealthy') {
+            healthTag = `<span class="text-[9px] text-rose-400 font-mono font-bold animate-pulse">⚠ UNHEALTHY</span>`;
+          } else {
+            healthTag = `<span class="text-[9px] text-slate-500 font-mono">DOCKER</span>`;
+          }
         }
 
         // Ports formatting
         let portsHtml = '<span class="text-slate-600 text-[10px] font-mono">--</span>';
         if (c.ports && c.ports.length > 0) {
           portsHtml = c.ports.map(p => {
-            if (p.link_port) {
-              const host = window.location.hostname || 'localhost';
-              const url = `http://${host}:${p.link_port}`;
-              return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[10px]" title="Abrir servicio web">${p.link_port} ↗</a>`;
+            const pNum = p.link_port || p.external || p.internal;
+            if (pNum) {
+              const proto = (p.protocol === 'https' || pNum === 8834 || pNum === 443) ? 'https' : 'http';
+              const url = `${proto}://${host}:${pNum}`;
+              return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[10px]" title="Abrir servicio web">${pNum} ↗</a>`;
             }
-            return `<span class="text-slate-400 font-mono text-[10px]">${p.internal}/${p.protocol || 'tcp'}</span>`;
+            return `<span class="text-slate-400 font-mono text-[10px]">${p.internal || '--'}/${p.protocol || 'tcp'}</span>`;
           }).join(' ');
         }
 
         // Service categorization
         const sInfo = c.service_info || { icon: '🐳', label: 'App' };
-        const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
-        const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
 
-        // Mini sparkline SVG wave (animado fluidamente a 60fps)
-        const waveSvg = generateLiveSparklineSvg(c.id, isRunning, Number(cpuVal));
-
-        rowsHtml += `
-          <div class="grid grid-cols-12 gap-2 items-center px-2.5 py-2 bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/40 transition" data-cid="${c.id}" id="container-row-${c.id}">
-            
-            <!-- Col 1: Icon & Name (5 cols) -->
-            <div class="col-span-5 flex items-center gap-2 overflow-hidden">
-              <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🐳'}</span>
-              <div class="flex flex-col truncate">
-                <span class="font-bold text-slate-100 truncate text-[11px] hover:text-cyan-400 transition cursor-pointer" onclick="viewContainerLogs('${c.id}', '${c.name}')">${c.name}</span>
-                <span class="text-[10px] font-mono text-slate-500 truncate">${c.image}</span>
-              </div>
-            </div>
-
-            <!-- Col 2: Status & Health (2 cols) -->
-            <div class="col-span-2 flex flex-col items-center justify-center gap-0.5">
-              ${statusBadge}
-              ${healthTag}
-            </div>
-
-            <!-- Col 3: Ports (2 cols) -->
-            <div class="col-span-2 flex flex-wrap items-center justify-center gap-1">
-              ${portsHtml}
-            </div>
-
-            <!-- Col 4: Metrics, Sparkline, Logs (3 cols) -->
-            <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px]">
-              <div class="flex flex-col text-right">
-                <span class="text-slate-300">CPU: <b class="text-cyan-400" id="cpu-val-${c.id}">${cpuVal}%</b></span>
-                <span class="text-slate-400" id="mem-val-${c.id}">MEM: ${memMb} MB</span>
+        if (c.is_host) {
+          // Row for Native Host Service
+          rowsHtml += `
+            <div class="grid grid-cols-12 gap-2 items-center px-2.5 py-2 bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/40 transition" data-cid="${c.id}" id="container-row-${c.id}">
+              
+              <!-- Col 1: Icon & Name (5 cols) -->
+              <div class="col-span-5 flex items-center gap-2 overflow-hidden">
+                <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🌐'}</span>
+                <div class="flex flex-col truncate">
+                  <span class="font-bold text-slate-100 truncate text-[11px]">${c.name}</span>
+                  <span class="text-[10px] font-mono text-slate-500 truncate">${c.image}</span>
+                </div>
               </div>
 
-              <!-- Sparkline Live Wave -->
-              <div class="hidden sm:block">
-                ${waveSvg}
+              <!-- Col 2: Status & Source (2 cols) -->
+              <div class="col-span-2 flex flex-col items-center justify-center gap-0.5">
+                ${statusBadge}
+                ${healthTag}
               </div>
 
-              <!-- Actions Group (Start / Stop / Restart / Logs) -->
-              <div class="flex items-center gap-1">
+              <!-- Col 3: Ports (2 cols) -->
+              <div class="col-span-2 flex flex-wrap items-center justify-center gap-1">
+                ${portsHtml}
+              </div>
+
+              <!-- Col 4: Action (3 cols) -->
+              <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px]">
+                <span class="text-slate-400 hidden sm:inline">Servicio Host</span>
                 ${isRunning ? `
-                  <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                  </button>
-                  <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}')" title="Apagar / Detener contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-400 transition" aria-label="Detener">
-                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
-                  </button>
+                  <a href="${c.url || '#'}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white text-[9px] font-bold uppercase transition flex items-center gap-0.5">
+                    Abrir ↗
+                  </a>
                 ` : `
-                  <button onclick="performContainerAction('${c.id}', 'start', '${c.name}')" title="Iniciar contenedor" class="p-1 rounded bg-emerald-950 border border-emerald-600 hover:border-emerald-400 text-emerald-300 hover:text-white transition" aria-label="Iniciar">
-                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  </button>
-                  <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                  </button>
+                  <span class="text-slate-500 text-[9px] font-mono">Inactivo</span>
                 `}
-
-                <!-- LOGS button -->
-                <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
-                  LOGS
-                </button>
               </div>
-            </div>
 
-          </div>
-        `;
+            </div>
+          `;
+        } else {
+          // Row for Docker Container
+          const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
+          const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
+          const waveSvg = generateLiveSparklineSvg(c.id, isRunning, Number(cpuVal));
+
+          rowsHtml += `
+            <div class="grid grid-cols-12 gap-2 items-center px-2.5 py-2 bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/40 transition" data-cid="${c.id}" id="container-row-${c.id}">
+              
+              <!-- Col 1: Icon & Name (5 cols) -->
+              <div class="col-span-5 flex items-center gap-2 overflow-hidden">
+                <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🐳'}</span>
+                <div class="flex flex-col truncate">
+                  <span class="font-bold text-slate-100 truncate text-[11px] hover:text-cyan-400 transition cursor-pointer" onclick="viewContainerLogs('${c.id}', '${c.name}')">${c.name}</span>
+                  <span class="text-[10px] font-mono text-slate-500 truncate">${c.image}</span>
+                </div>
+              </div>
+
+              <!-- Col 2: Status & Health (2 cols) -->
+              <div class="col-span-2 flex flex-col items-center justify-center gap-0.5">
+                ${statusBadge}
+                ${healthTag}
+              </div>
+
+              <!-- Col 3: Ports (2 cols) -->
+              <div class="col-span-2 flex flex-wrap items-center justify-center gap-1">
+                ${portsHtml}
+              </div>
+
+              <!-- Col 4: Metrics, Sparkline, Logs (3 cols) -->
+              <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px]">
+                <div class="flex flex-col text-right">
+                  <span class="text-slate-300">CPU: <b class="text-cyan-400" id="cpu-val-${c.id}">${cpuVal}%</b></span>
+                  <span class="text-slate-400" id="mem-val-${c.id}">MEM: ${memMb} MB</span>
+                </div>
+
+                <!-- Sparkline Live Wave -->
+                <div class="hidden sm:block">
+                  ${waveSvg}
+                </div>
+
+                <!-- Actions Group (Start / Stop / Restart / Logs) -->
+                <div class="flex items-center gap-1">
+                  ${isRunning ? `
+                    <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}')" title="Apagar / Detener contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-400 transition" aria-label="Detener">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
+                    </button>
+                  ` : `
+                    <button onclick="performContainerAction('${c.id}', 'start', '${c.name}')" title="Iniciar contenedor" class="p-1 rounded bg-emerald-950 border border-emerald-600 hover:border-emerald-400 text-emerald-300 hover:text-white transition" aria-label="Iniciar">
+                      <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                    <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                  `}
+
+                  <!-- LOGS button -->
+                  <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
+                    LOGS
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          `;
+        }
       });
 
       containerListEl.innerHTML = rowsHtml;
