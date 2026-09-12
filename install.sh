@@ -86,6 +86,10 @@ if [ -z "$SERVER_IP" ]; then
   SERVER_IP="<IP-DE-TU-SERVIDOR>"
 fi
 
+# 8. Leer puerto configurado
+PORT_CONFIG=$(grep -E '^PORT=' .env 2>/dev/null | cut -d '=' -f 2 | tr -d '\r' | tr -d ' ' || echo "8090")
+PORT_CONFIG=${PORT_CONFIG:-8090}
+
 echo ""
 echo -e "${GREEN}==============================================================${NC}"
 echo -e "${GREEN}    ✅ ¡INSTALACIÓN COMPLETADA Y EN EJECUCIÓN EXITOSA!        ${NC}"
@@ -96,7 +100,7 @@ echo -e " ${CYAN}No necesitas hacer nada más:${NC} cada contenedor o servicio q
 echo -e " inicies en Ubuntu se detectará en vivo en la pantalla."
 echo ""
 echo -e " 🌐 Accede ahora desde cualquier navegador a:"
-echo -e "    ${YELLOW}👉 http://${SERVER_IP}:8080${NC}"
+echo -e "    ${YELLOW}👉 http://${SERVER_IP}:${PORT_CONFIG}${NC}"
 echo ""
 echo -e " ⚙️ Comandos útiles de gestión:"
 echo -e "    - Ver logs:     ${CYAN}docker compose logs -f${NC}"

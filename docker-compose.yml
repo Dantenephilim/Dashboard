@@ -8,10 +8,10 @@ services:
     # network_mode: "host" en Ubuntu Server Pro permite:
     # 1. Escanear autónomamente todos los puertos y servicios TCP activos del host
     # 2. Rendimiento nativo sin intermediación de proxy/NAT
-    # 3. Acceso directo en http://<ip-ubuntu>:8080
+    # 3. Acceso directo en http://<ip-ubuntu>:8090 (o el puerto configurado en PORT)
     network_mode: "host"
     environment:
-      - PORT=8080
+      - PORT=${PORT:-8090}
       - TZ=UTC
     volumes:
       # Socket de Docker en modo lectura para escanear contenedores

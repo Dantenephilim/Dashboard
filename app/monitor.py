@@ -59,7 +59,8 @@ KNOWN_PORT_SERVICES = {
     5432: ("PostgreSQL Database", "database", "🐘"),
     6379: ("Redis In-Memory Cache", "database", "⚡"),
     8000: ("FastAPI / Web App", "web", "⚡"),
-    8080: ("Monitor Dashboard Web", "web", "🖥️"),
+    8080: ("HTTP Proxy / Alt Web", "web", "🌐"),
+    8090: ("Monitor Dashboard Web", "web", "🖥️"),
     8443: ("HTTPS Alt Web", "web", "🔒"),
     9000: ("Portainer / Management", "monitoring", "🐳"),
     9090: ("Prometheus Metrics", "monitoring", "📈"),
@@ -122,7 +123,7 @@ def scan_host_listening_services() -> list:
                 category = known[1] if known else "general"
                 icon = known[2] if known else "🔌"
 
-                is_web = port in [80, 443, 3000, 5000, 8000, 8080, 8443, 9000, 9443] or category in ["web", "monitoring"]
+                is_web = port in [80, 443, 3000, 5000, 8000, 8080, 8090, 8443, 9000, 9443] or category in ["web", "monitoring"]
 
                 discovered.append({
                     "port": port,

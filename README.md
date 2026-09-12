@@ -44,10 +44,31 @@ sudo bash install.sh
 **¿Qué hace automáticamente el instalador por ti?**
 1. Comprueba si Docker y Docker Compose están instalados (si faltan, los instala oficialmente).
 2. Habilita el servicio de Docker e integra al usuario en el grupo de permisos.
-3. Configura y levanta el contenedor con `docker compose up -d --build`.
-4. Obtiene la dirección IP de tu servidor y te entrega el enlace listo para abrir:
+3. Lee el puerto de `.env` (por defecto **8090**, evitando colisiones con los puertos en uso de tu servidor).
+4. Construye y levanta el contenedor con `docker compose up -d --build`.
+5. Obtiene la dirección IP de tu servidor y te entrega el enlace listo para abrir:
    ```
-   👉 http://<IP-DE-TU-SERVIDOR>:8080
+   👉 http://<IP-DE-TU-SERVIDOR>:8090
+   ```
+
+---
+
+## ⚙️ Configuración del Puerto (`.env`)
+
+Por defecto el dashboard corre en el puerto **`8090`** para respetar tus servicios activos (como 80, 443, 3000, 5432, 8080, 8081, 9000, etc.).
+
+Si en cualquier momento deseas cambiarlo a otro puerto libre (por ejemplo `8888` o `7080`):
+1. Edita el archivo `.env`:
+   ```bash
+   nano .env
+   ```
+2. Modifica la variable:
+   ```env
+   PORT=8090
+   ```
+3. Reinicia el contenedor:
+   ```bash
+   docker compose up -d
    ```
 
 ---
