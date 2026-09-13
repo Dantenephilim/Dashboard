@@ -153,6 +153,14 @@
         <div class="hidden lg:flex items-center gap-2 text-[11px] text-slate-400 font-mono">
           <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300" id="header-host-badge">nexotech-srv01</span>
           <span id="header-os-badge">Ubuntu Linux</span>
+          <div class="flex items-center gap-1.5 ml-1 pl-2 border-l border-slate-800">
+            <span id="header-apache-chip" class="px-2 py-0.5 rounded bg-slate-900/90 border border-slate-800 text-[10px] flex items-center gap-1">
+              <span>🪶 Apache:</span> <span id="header-apache-status" class="font-bold text-slate-500">...</span>
+            </span>
+            <span id="header-nessus-chip" class="px-2 py-0.5 rounded bg-slate-900/90 border border-slate-800 text-[10px] flex items-center gap-1">
+              <span>🛡️ Nessus:</span> <span id="header-nessus-status" class="font-bold text-slate-500">...</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -443,24 +451,24 @@
           </div>
         </div>
 
-        <!-- DEDICATED HOST & SYSTEM SERVICES PANEL (APACHE, NESSUS & PUERTOS) -->
-        <div class="bg-[#090e17]/90 border border-slate-800/90 rounded-lg p-2 flex flex-col gap-1.5 shadow-sm">
+        <!-- DEDICATED HOST & SYSTEM SERVICES PANEL (APACHE & NESSUS) -->
+        <div class="bg-[#090e17]/95 border border-slate-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5 font-mono text-[10px] font-bold text-slate-300 uppercase tracking-wider">
-              <span class="text-emerald-400">🌐</span>
-              <span>SERVICIOS NATIVOS DEL SERVIDOR (UBUNTU HOST)</span>
+            <div class="flex items-center gap-2 font-mono text-xs font-bold text-slate-200 uppercase tracking-wider">
+              <span class="text-emerald-400 text-sm">🌐</span>
+              <span>ESTADO DE SERVICIOS: APACHE & NESSUS</span>
             </div>
-            <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">Detección Host & Puertos</span>
+            <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-700/50">Monitoreo en Tiempo Real</span>
           </div>
 
           <!-- Cards Grid for Apache & Nessus -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="system-services-cards">
             <!-- Rendered by JavaScript: Apache & Nessus Live Status Cards -->
-            <div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-500 font-mono text-[10px] flex items-center gap-2">
-              <span class="animate-pulse">🪶</span> Escaneando Apache...
+            <div class="p-2.5 rounded bg-slate-900/80 border border-slate-800 text-slate-400 font-mono text-xs flex items-center gap-2">
+              <span class="animate-pulse text-lg">🪶</span> Verificando Apache HTTP Server...
             </div>
-            <div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-500 font-mono text-[10px] flex items-center gap-2">
-              <span class="animate-pulse">🛡️</span> Escaneando Nessus...
+            <div class="p-2.5 rounded bg-slate-900/80 border border-slate-800 text-slate-400 font-mono text-xs flex items-center gap-2">
+              <span class="animate-pulse text-lg">🛡️</span> Verificando Tenable Nessus Scanner...
             </div>
           </div>
         </div>
@@ -1240,70 +1248,80 @@
       const host = window.location.hostname || 'localhost';
       const srv = services || (metrics && metrics.system_services) || (currentMetrics && currentMetrics.system_services) || {};
 
-      const ap = srv.apache || { name: 'Apache HTTP Server', icon: '🪶', status: 'OFFLINE', port: 80, running: false, description: 'Puerto 80/443 no detectado' };
-      const ns = srv.nessus || { name: 'Tenable Nessus Scanner', icon: '🛡️', status: 'OFFLINE', port: 8834, running: false, description: 'Puerto 8834 no detectado' };
+      const ap = srv.apache || { name: 'Apache HTTP Server', icon: '🪶', status: 'CAÍDO', port: 80, running: false, description: 'Servicio Caído (Puerto 80/443 inactivo)' };
+      const ns = srv.nessus || { name: 'Tenable Nessus Scanner', icon: '🛡️', status: 'CAÍDO', port: 8834, running: false, description: 'Servicio Caído (Puerto 8834 cerrado)' };
 
-      const apRunning = Boolean(ap.running || ap.status === 'RUNNING');
+      const apRunning = Boolean(ap.running || ap.status === 'LEVANTADO' || ap.status === 'RUNNING');
       const apPort = ap.port || 80;
       const apUrl = `http://${host}:${apPort}`;
-      const apStatusBadge = apRunning 
-        ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block"></span>RUNNING</span>`
-        : (ap.status === 'STOPPED' 
-            ? `<span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-900/80 border border-rose-700 text-rose-300">STOPPED</span>`
-            : `<span class="px-2 py-0.5 rounded text-[9px] font-mono text-slate-400 bg-slate-800 border border-slate-700">INACTIVO</span>`);
 
-      const nsRunning = Boolean(ns.running || ns.status === 'RUNNING');
+      const nsRunning = Boolean(ns.running || ns.status === 'LEVANTADO' || ns.status === 'RUNNING');
       const nsPort = ns.port || 8834;
       const nsUrl = `https://${host}:${nsPort}`;
+
+      // Update header live chips
+      const hApStatus = document.getElementById('header-apache-status');
+      if (hApStatus) {
+        hApStatus.textContent = apRunning ? 'LEVANTADO' : 'CAÍDO';
+        hApStatus.className = apRunning ? 'font-black text-emerald-400' : 'font-black text-rose-400';
+      }
+      const hNsStatus = document.getElementById('header-nessus-status');
+      if (hNsStatus) {
+        hNsStatus.textContent = nsRunning ? 'LEVANTADO' : 'CAÍDO';
+        hNsStatus.className = nsRunning ? 'font-black text-emerald-400' : 'font-black text-rose-400';
+      }
+
+      const apStatusBadge = apRunning 
+        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
+        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
+
       const nsStatusBadge = nsRunning 
-        ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.3)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block"></span>RUNNING</span>`
-        : (ns.status === 'STOPPED' 
-            ? `<span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-900/80 border border-rose-700 text-rose-300">STOPPED</span>`
-            : `<span class="px-2 py-0.5 rounded text-[9px] font-mono text-slate-400 bg-slate-800 border border-slate-700">INACTIVO</span>`);
+        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
+        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
 
       cardsContainer.innerHTML = `
         <!-- Apache Card -->
-        <div class="p-2.5 rounded-md bg-[#0a0f1a] border ${apRunning ? 'border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'border-slate-800'} flex items-center justify-between transition">
-          <div class="flex items-center gap-2.5 overflow-hidden">
-            <span class="text-2xl flex-shrink-0">🪶</span>
+        <div class="p-3 rounded-lg border transition-all ${apRunning ? 'bg-gradient-to-r from-emerald-950/40 via-[#0a121f] to-[#0a121f] border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-rose-950/30 via-[#0a121f] to-[#0a121f] border-rose-600/50 shadow-[0_0_12px_rgba(244,63,94,0.1)]'} flex items-center justify-between">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <span class="text-3xl flex-shrink-0">🪶</span>
             <div class="flex flex-col truncate">
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-slate-100 text-xs truncate">Apache Server</span>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-100 text-xs truncate">Apache Web Server</span>
                 ${apStatusBadge}
               </div>
-              <span class="text-[10px] text-slate-400 font-mono truncate">${ap.description || 'Puerto 80/443 TCP'}</span>
+              <span class="text-[11px] ${apRunning ? 'text-emerald-300' : 'text-rose-300'} font-mono truncate font-medium mt-0.5">${ap.description || (apRunning ? 'Activo en puerto 80 TCP' : 'Servicio detenido o inactivo')}</span>
             </div>
           </div>
-          <div class="flex items-center gap-1 flex-shrink-0 ml-2">
+          <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
             ${apRunning ? `
-              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white font-mono text-[10px] font-bold transition flex items-center gap-1" title="Abrir Apache en el navegador">
+              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[10px] font-black transition flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.4)]" title="Abrir Apache en el navegador">
                 Abrir Web ↗
               </a>
             ` : `
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-900 border border-slate-800">Puerto 80</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto 80</span>
             `}
           </div>
         </div>
 
         <!-- Nessus Card -->
-        <div class="p-2.5 rounded-md bg-[#0a0f1a] border ${nsRunning ? 'border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'border-slate-800'} flex items-center justify-between transition">
-          <div class="flex items-center gap-2.5 overflow-hidden">
-            <span class="text-2xl flex-shrink-0">🛡️</span>
+        <div class="p-3 rounded-lg border transition-all ${nsRunning ? 'bg-gradient-to-r from-emerald-950/40 via-[#0a121f] to-[#0a121f] border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-rose-950/30 via-[#0a121f] to-[#0a121f] border-rose-600/50 shadow-[0_0_12px_rgba(244,63,94,0.1)]'} flex items-center justify-between">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <span class="text-3xl flex-shrink-0">🛡️</span>
             <div class="flex flex-col truncate">
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-slate-100 text-xs truncate">Nessus Scanner</span>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-100 text-xs truncate">Tenable Nessus Scanner</span>
                 ${nsStatusBadge}
               </div>
-              <span class="text-[10px] text-slate-400 font-mono truncate">${ns.description || 'Puerto 8834 HTTPS'}</span>
+              <span class="text-[11px] ${nsRunning ? 'text-emerald-300' : 'text-rose-300'} font-mono truncate font-medium mt-0.5">${ns.description || (nsRunning ? 'Activo en puerto 8834 HTTPS' : 'Servicio detenido o inactivo')}</span>
             </div>
           </div>
-          <div class="flex items-center gap-1 flex-shrink-0 ml-2">
+          <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
             ${nsRunning ? `
-              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white font-mono text-[10px] font-bold transition flex items-center gap-1" title="Abrir consola web de Nessus">
+              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[10px] font-black transition flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.4)]" title="Abrir consola web de Nessus">
                 Abrir Nessus ↗
               </a>
             ` : `
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-500 bg-slate-900 border border-slate-800">Puerto 8834</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto 8834</span>
             `}
           </div>
         </div>
@@ -1493,7 +1511,13 @@
 
         // Status pill
         let statusBadge = '';
-        if (isRunning) {
+        if (c.is_host) {
+          if (isRunning) {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 tracking-wide shadow-[0_0_8px_rgba(16,185,129,0.4)]">LEVANTADO</span>`;
+          } else {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white tracking-wide shadow-[0_0_8px_rgba(244,63,94,0.3)]">CAÍDO</span>`;
+          }
+        } else if (isRunning) {
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-600 text-white tracking-wide shadow-[0_0_8px_rgba(16,185,129,0.3)]">RUNNING</span>`;
         } else if (isRestarting) {
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-amber-600 text-white tracking-wide animate-pulse">RESTART</span>`;

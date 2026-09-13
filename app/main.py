@@ -126,10 +126,14 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    """Sirve la interfaz web principal."""
+    """Sirve la interfaz web principal con cabeceras no-cache para evitar que el navegador guarde versiones viejas."""
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(str(index_file))
+        resp = FileResponse(str(index_file))
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     return JSONResponse(status_code=404, content={"error": "index.html no encontrado"})
 
 
@@ -223,13 +227,29 @@ async def api_restart_all_containers():
 
 
 def get_current_commit() -> str:
+    # 1. Revisar version.json si existe
+    version_file = BASE_DIR / "version.json"
+    if version_file.exists():
+        try:
+            with open(version_file, "r", encoding="utf-8") as f:
+                vdata = json.load(f)
+                if vdata.get("commit"):
+                    return str(vdata["commit"])
+        except Exception:
+            pass
+
+    # 2. Revisar git en el repositorio
     import subprocess
     from app import __version__
     try:
         out = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL, timeout=2)
-        return out.decode("utf-8").strip()
+        commit = out.decode("utf-8").strip()
+        if commit:
+            return commit
     except Exception:
-        return "v" + __version__
+        pass
+
+    return "v" + __version__
 
 
 def check_github_updates() -> dict:
@@ -250,14 +270,14 @@ def check_github_updates() -> dict:
             "https://api.github.com/repos/Dantenephilim/Dashboard/commits/main",
             headers={"User-Agent": "Ubuntu-Dashboard-Monitor"}
         )
-        with urllib.request.urlopen(req, timeout=3) as resp:
+        with urllib.request.urlopen(req, timeout=4) as resp:
             if resp.status == 200:
                 data = json.loads(resp.read().decode("utf-8"))
                 remote_sha = data.get("sha", "")[:7]
                 commit_msg = data.get("commit", {}).get("message", "").split("\n")[0]
                 result["latest_commit"] = remote_sha
                 result["latest_message"] = commit_msg
-                if remote_sha and current_commit and not current_commit.startswith("v") and remote_sha != current_commit:
+                if remote_sha and current_commit and remote_sha != current_commit:
                     result["update_available"] = True
     except Exception as e:
         result["error"] = str(e)
@@ -271,24 +291,97 @@ async def api_updates():
 
 
 def trigger_system_update() -> dict:
-    """Ejecuta el script de actualización o sincronización con GitHub."""
+    """Descarga la última versión de GitHub y actualiza la aplicación."""
     import subprocess
-    update_script = BASE_DIR.parent / "update.sh"
-    if update_script.exists():
-        subprocess.Popen(["bash", str(update_script)], cwd=str(BASE_DIR.parent))
+    import shutil
+    import os
+    import threading
+    import time
+    from datetime import datetime
+
+    logger.info("Iniciando proceso de actualización desde GitHub...")
+
+    # Si estamos corriendo fuera de Docker y existe update.sh, usar update.sh local
+    is_in_docker = os.path.exists("/.dockerenv") or os.path.exists("/host")
+    if not is_in_docker:
+        update_script = BASE_DIR.parent / "update.sh"
+        if update_script.exists():
+            subprocess.Popen(["bash", str(update_script)], cwd=str(BASE_DIR.parent))
+            return {
+                "status": "ok",
+                "message": "Actualización iniciada en el host con update.sh."
+            }
+
+    # Si estamos en Docker (o fallback estándar), clonamos la última versión en /tmp
+    temp_dir = Path("/tmp/dashboard_update")
+    try:
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+        logger.info("Clonando repositorio https://github.com/Dantenephilim/Dashboard.git...")
+        clone_res = subprocess.run(
+            ["git", "clone", "--depth", "1", "https://github.com/Dantenephilim/Dashboard.git", str(temp_dir)],
+            capture_output=True,
+            text=True,
+            timeout=45
+        )
+
+        if clone_res.returncode != 0:
+            raise RuntimeError(f"Error de git clone: {clone_res.stderr.strip() or clone_res.stdout.strip()}")
+
+        latest_sha = "latest"
+        try:
+            out = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=str(temp_dir), timeout=5)
+            latest_sha = out.decode("utf-8").strip()
+        except Exception:
+            pass
+
+        # Sincronizar archivos a BASE_DIR
+        src_app = temp_dir / "app"
+        if src_app.exists():
+            if (src_app / "static").exists():
+                shutil.copytree(src_app / "static", BASE_DIR / "static", dirs_exist_ok=True)
+                logger.info("Archivos estáticos actualizados con éxito.")
+
+            for py_f in src_app.glob("*.py"):
+                shutil.copy2(py_f, BASE_DIR / py_f.name)
+                logger.info(f"Módulo Python '{py_f.name}' actualizado con éxito.")
+
+        # Guardar archivo version.json
+        version_file = BASE_DIR / "version.json"
+        with open(version_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "commit": latest_sha,
+                "updated_at": datetime.now().isoformat(),
+                "version": "2.2.0"
+            }, f, indent=2)
+
+        # Limpiar directorio temporal
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+        logger.info(f"Actualización completada a {latest_sha}. Programando reinicio del contenedor...")
+
+        # Reinicio seguro en segundo plano para que Docker reinicie el contenedor automáticamente
+        def restart_worker():
+            time.sleep(1.5)
+            logger.info("Reiniciando proceso uvicorn...")
+            os._exit(0)
+
+        threading.Thread(target=restart_worker, daemon=True).start()
+
         return {
             "status": "ok",
-            "message": "Actualización desde GitHub iniciada con update.sh. El contenedor se reconstruirá en segundo plano."
+            "message": f"¡Actualizado exitosamente al commit {latest_sha}! El dashboard se reiniciará en 2 segundos."
         }
 
-    subprocess.Popen(
-        ["sh", "-c", "git fetch origin main && git reset --hard origin/main"],
-        cwd=str(BASE_DIR.parent)
-    )
-    return {
-        "status": "ok",
-        "message": "Actualización descargada desde GitHub. Reiniciando servicio..."
-    }
+    except Exception as e:
+        logger.error(f"Error actualizando contenedor: {e}", exc_info=True)
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        return {
+            "status": "error",
+            "message": f"Error al actualizar desde GitHub: {str(e)}. Puedes ejecutar en tu terminal: cd ~/Dashboard && sudo bash update.sh"
+        }
 
 
 @app.post("/api/updates/apply")

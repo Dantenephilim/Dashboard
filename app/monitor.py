@@ -323,6 +323,35 @@ def scan_host_processes() -> dict:
     return detected
 
 
+def probe_tcp_port(port: int) -> bool:
+    """Comprueba rápidamente si un puerto TCP está abierto conectándose mediante socket."""
+    candidate_ips = ["127.0.0.1", "localhost"]
+    # Detectar la IP del host Ubuntu (default gateway del contenedor Docker)
+    try:
+        if os.path.exists("/proc/net/route"):
+            with open("/proc/net/route", "r") as f:
+                for line in f.readlines()[1:]:
+                    parts = line.strip().split()
+                    if len(parts) >= 3 and parts[1] == "00000000":
+                        gw_hex = parts[2]
+                        gw_ip = socket.inet_ntoa(bytes.fromhex(gw_hex)[::-1])
+                        if gw_ip and gw_ip != "0.0.0.0" and gw_ip not in candidate_ips:
+                            candidate_ips.insert(0, gw_ip)
+                        break
+    except Exception:
+        pass
+
+    for ip in candidate_ips:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.2)
+                if s.connect_ex((ip, port)) == 0:
+                    return True
+        except Exception:
+            pass
+    return False
+
+
 def get_system_services(doc: dict, host_ports: set) -> dict:
     """Retorna el estado detallado de los servicios clave del sistema (Apache, Nessus, etc.)."""
     host_procs = scan_host_processes()
@@ -335,52 +364,45 @@ def get_system_services(doc: dict, host_ports: set) -> dict:
     # 1. Apache HTTP Server
     apache_installed = check_host_service_installed("apache") or bool(apache_in_docker)
     apache_proc = host_procs.get("apache")
-    apache_port_active = 80 in host_ports or 443 in host_ports or 8080 in host_ports
+    apache_port_active = (
+        80 in host_ports or 443 in host_ports or 8080 in host_ports or
+        probe_tcp_port(80) or probe_tcp_port(443) or probe_tcp_port(8080)
+    )
     apache_docker_running = bool(apache_in_docker and apache_in_docker.get("status", "").lower() == "running")
     
     apache_running = bool(apache_proc) or apache_port_active or apache_docker_running
-    apache_active_port = 80 if 80 in host_ports else (443 if 443 in host_ports else (8080 if 8080 in host_ports else 80))
+    apache_active_port = 80 if (80 in host_ports or probe_tcp_port(80)) else (443 if (443 in host_ports or probe_tcp_port(443)) else (8080 if (8080 in host_ports or probe_tcp_port(8080)) else 80))
     
     if apache_running:
-        apache_status = "RUNNING"
+        apache_status = "LEVANTADO"
         apache_color = "emerald"
         apache_source = "docker" if apache_docker_running else "host"
-        apache_desc = f"Activo en puerto {apache_active_port} ({'Docker' if apache_docker_running else 'Ubuntu Service'})"
-    elif apache_installed:
-        apache_status = "STOPPED"
+        apache_desc = f"Servicio Levantado (Activo en puerto {apache_active_port} TCP)"
+    else:
+        apache_status = "CAÍDO"
         apache_color = "rose"
         apache_source = "host"
-        apache_desc = "Instalado en Ubuntu Server (Servicio detenido)"
-    else:
-        apache_status = "OFFLINE"
-        apache_color = "slate"
-        apache_source = "host"
-        apache_desc = "Puerto 80/443 no detectado / Inactivo"
+        apache_desc = "Servicio Caído (Puerto 80/443 inactivo o detenido)"
 
     # 2. Tenable Nessus Scanner
     nessus_installed = check_host_service_installed("nessus") or bool(nessus_in_docker)
     nessus_proc = host_procs.get("nessus")
-    nessus_port_active = 8834 in host_ports
+    nessus_port_active = 8834 in host_ports or probe_tcp_port(8834)
     nessus_docker_running = bool(nessus_in_docker and nessus_in_docker.get("status", "").lower() == "running")
     
     nessus_running = bool(nessus_proc) or nessus_port_active or nessus_docker_running
     nessus_active_port = 8834
     
     if nessus_running:
-        nessus_status = "RUNNING"
+        nessus_status = "LEVANTADO"
         nessus_color = "emerald"
         nessus_source = "docker" if nessus_docker_running else "host"
-        nessus_desc = f"Activo en puerto 8834 HTTPS ({'Docker' if nessus_docker_running else 'Ubuntu Service'})"
-    elif nessus_installed:
-        nessus_status = "STOPPED"
+        nessus_desc = f"Servicio Levantado (Activo en puerto 8834 HTTPS)"
+    else:
+        nessus_status = "CAÍDO"
         nessus_color = "rose"
         nessus_source = "host"
-        nessus_desc = "Nessus instalado en Ubuntu (Servicio nessusd detenido)"
-    else:
-        nessus_status = "OFFLINE"
-        nessus_color = "slate"
-        nessus_source = "host"
-        nessus_desc = "Puerto 8834 cerrado / Inactivo"
+        nessus_desc = "Servicio Caído (Puerto 8834 cerrado o inactivo)"
 
     return {
         "apache": {
