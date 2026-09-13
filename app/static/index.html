@@ -35,10 +35,10 @@
 
   <style>
     /* NOC Cyber Scrollbar */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #080c14; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #0ea5e9; }
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #070b14; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; border: 1px solid rgba(6, 182, 212, 0.25); }
+    ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
 
     /* Metallic Header Border */
     .metallic-badge {
@@ -507,23 +507,58 @@
           <span class="text-[10px] font-mono text-amber-400 underline cursor-pointer" onclick="openUpdateModal()">Verificar Docker</span>
         </div>
 
-        <!-- Containers List (Scrollable) -->
-        <div id="containers-list" class="flex flex-col gap-1.5 overflow-y-auto max-h-[460px] pr-1">
+        <!-- Containers List (Expands to fill available vertical space) -->
+        <div id="containers-list" class="flex-1 min-h-[300px] flex flex-col gap-1.5 overflow-y-auto pr-1">
           <!-- Dynamically filled with container rows -->
           <div class="text-center py-8 text-slate-500 font-mono">Escaneando contenedores...</div>
         </div>
 
-        <!-- Bottom Host Hardware & Storage Summary (Matching Reference Photo) -->
-        <div class="mt-auto pt-2 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 bg-[#090e17]/60 p-2 rounded">
+        <!-- INTEGRATED LIVE LOGS & CONSOLE (DOZZLE EMBEDDED STREAM) -->
+        <div id="integrated-console-box" class="bg-[#040711] border border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-inner mt-1">
+          <!-- Console Header Toolbar -->
+          <div class="flex flex-wrap items-center justify-between px-2.5 py-1.5 bg-[#080d18] border-b border-slate-800 text-[10px] font-mono gap-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="font-bold text-slate-200">CONSOLA EN VIVO</span>
+              <span class="text-slate-600">|</span>
+              <select id="console-container-select" onchange="switchIntegratedConsole(this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-cyan-300 font-mono text-[10px] focus:outline-none focus:border-cyan-500">
+                <option value="">Seleccionar Contenedor para Logs...</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <button onclick="toggleConsoleAutoScroll()" id="btn-autoscroll" class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 hover:text-white border border-slate-700 text-[9px] flex items-center gap-1" title="Auto-scroll hacia el final">
+                <span id="dot-autoscroll" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Auto-scroll
+              </button>
+              <button onclick="copyIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Copiar logs al portapapeles">
+                Copiar
+              </button>
+              <button onclick="clearIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Limpiar pantalla de consola">
+                Limpiar
+              </button>
+              <button onclick="toggleIntegratedConsole()" id="btn-toggle-console" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-600 text-[9px] font-semibold transition" title="Minimizar / Expandir consola">
+                Ocultar ▼
+              </button>
+            </div>
+          </div>
+
+          <!-- Console Terminal Body -->
+          <div id="integrated-console-body" class="p-2.5 font-mono text-[10px] leading-relaxed text-emerald-400/90 h-36 overflow-y-auto bg-[#02050a] selection:bg-cyan-900 whitespace-pre-wrap select-text">
+Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú para ver su actividad en vivo.
+          </div>
+        </div>
+
+        <!-- Bottom Host Hardware & Storage Summary -->
+        <div class="pt-2 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 bg-[#070c16]/80 p-2 rounded border border-slate-800/60 shadow-sm mt-1">
           <div class="flex flex-col gap-0.5">
-            <div>Kernel: <span id="footer-kernel" class="text-slate-200">Linux 6.8.0-generic</span></div>
-            <div>Host Info: <span id="footer-hostinfo" class="text-slate-200">Ubuntu 24.04 LTS (x86_64)</span></div>
+            <div>Kernel: <span id="footer-kernel" class="text-slate-200 font-semibold">Linux 6.8.0-generic</span></div>
+            <div>Host Info: <span id="footer-hostinfo" class="text-slate-200 font-semibold">Ubuntu 24.04 LTS (x86_64)</span></div>
             <div>Last Audit: <span id="footer-audit" class="text-slate-300">--:--:-- UTC</span></div>
           </div>
           <div class="flex flex-col gap-0.5 sm:text-right">
-            <div class="text-slate-300 font-bold">DISK STORAGE</div>
-            <div>Mount Point (/): <span id="footer-disk-used" class="text-cyan-400 font-bold">0.0 GB</span> / <span id="footer-disk-total" class="text-slate-300">0.0 GB</span></div>
-            <div>Disponibles: <span id="footer-disk-free" class="text-emerald-400 font-bold">0.0 GB</span></div>
+            <div class="text-slate-200 font-bold uppercase tracking-wider text-[9px] text-cyan-400">ALMACENAMIENTO DEL SISTEMA</div>
+            <div>Espacio Usado: <span id="footer-disk-used" class="text-cyan-400 font-bold">0.0 GB</span> / <span id="footer-disk-total" class="text-slate-300">0.0 GB</span></div>
+            <div>Espacio Libre: <span id="footer-disk-free" class="text-emerald-400 font-bold">0.0 GB</span></div>
           </div>
         </div>
 
@@ -1427,6 +1462,7 @@
       // Filter selection
       const query = (document.getElementById('search-container').value || '').toLowerCase().trim();
       const dockerContainers = docker.containers || [];
+      populateConsoleContainerSelect(dockerContainers);
       let list = [];
 
       if (currentFilter === 'docker') {
@@ -1703,6 +1739,11 @@
       document.getElementById('modal-logs-body').textContent = 'Cargando registros en vivo...';
       openModal('modal-logs');
 
+      // Sincronizar también con la consola integrada inferior
+      const select = document.getElementById('console-container-select');
+      if (select) select.value = containerId;
+      loadIntegratedConsoleLogs(containerId);
+
       try {
         const resp = await fetch(`/api/containers/${containerId}/logs?tail=120`);
         const data = await resp.json();
@@ -1728,6 +1769,114 @@
       }).catch(() => {
         showToast('Registros copiados', 'info');
       });
+    }
+
+    // =========================================================================
+    // INTEGRATED LIVE LOGS & CONSOLE (DOZZLE EMBEDDED STREAM)
+    // =========================================================================
+    let integratedConsoleContainerId = '';
+    let integratedConsoleAutoScroll = true;
+    let integratedConsoleInterval = null;
+
+    function populateConsoleContainerSelect(containers) {
+      const select = document.getElementById('console-container-select');
+      if (!select) return;
+      const currentVal = select.value || integratedConsoleContainerId;
+      const running = (containers || []).filter(c => (c.status || '').toLowerCase() === 'running');
+      
+      let html = '<option value="">Seleccionar Contenedor para Logs...</option>';
+      running.forEach(c => {
+        html += `<option value="${c.id}" ${c.id === currentVal ? 'selected' : ''}>${c.name} (${(c.id || '').substring(0, 7)})</option>`;
+      });
+      select.innerHTML = html;
+
+      // Si no hay ninguno seleccionado, seleccionar automáticamente el primero
+      if (!integratedConsoleContainerId && running.length > 0) {
+        select.value = running[0].id;
+        switchIntegratedConsole(running[0].id);
+      }
+    }
+
+    async function switchIntegratedConsole(containerId) {
+      integratedConsoleContainerId = containerId;
+      if (!containerId) {
+        const body = document.getElementById('integrated-console-body');
+        if (body) body.textContent = 'Selecciona un contenedor en el menú para ver sus registros en vivo.';
+        return;
+      }
+      await loadIntegratedConsoleLogs(containerId);
+
+      // Iniciar sondeo periódico de logs (cada 3 segundos) si no está activo
+      if (!integratedConsoleInterval) {
+        integratedConsoleInterval = setInterval(() => {
+          if (integratedConsoleContainerId && !document.getElementById('integrated-console-body').classList.contains('hidden')) {
+            loadIntegratedConsoleLogs(integratedConsoleContainerId, true);
+          }
+        }, 3000);
+      }
+    }
+
+    async function loadIntegratedConsoleLogs(containerId, isBackground = false) {
+      const body = document.getElementById('integrated-console-body');
+      if (!body) return;
+      if (!isBackground) {
+        body.textContent = `[CONECTANDO] Obteniendo registros en vivo para ${containerId.substring(0, 12)}...`;
+      }
+      try {
+        const resp = await fetch(`/api/containers/${containerId}/logs?tail=80`);
+        const data = await resp.json();
+        const logsText = data.logs || 'Sin registros recientes reportados por el contenedor.';
+        body.textContent = logsText;
+        if (integratedConsoleAutoScroll) {
+          body.scrollTop = body.scrollHeight;
+        }
+      } catch (err) {
+        if (!isBackground) {
+          body.textContent = `[ERROR] No se pudieron obtener los logs: ${err.message}`;
+        }
+      }
+    }
+
+    function toggleIntegratedConsole() {
+      const body = document.getElementById('integrated-console-body');
+      const btn = document.getElementById('btn-toggle-console');
+      if (!body || !btn) return;
+      if (body.classList.contains('hidden')) {
+        body.classList.remove('hidden');
+        btn.textContent = 'Ocultar ▼';
+        btn.classList.replace('text-amber-300', 'text-cyan-300');
+        if (integratedConsoleContainerId) {
+          loadIntegratedConsoleLogs(integratedConsoleContainerId);
+        }
+      } else {
+        body.classList.add('hidden');
+        btn.textContent = 'Mostrar Consola ▲';
+        btn.classList.replace('text-cyan-300', 'text-amber-300');
+      }
+    }
+
+    function toggleConsoleAutoScroll() {
+      integratedConsoleAutoScroll = !integratedConsoleAutoScroll;
+      const dot = document.getElementById('dot-autoscroll');
+      if (dot) {
+        dot.className = integratedConsoleAutoScroll ? 'w-1.5 h-1.5 rounded-full bg-emerald-400' : 'w-1.5 h-1.5 rounded-full bg-slate-600';
+      }
+      showToast(integratedConsoleAutoScroll ? 'Auto-scroll activado' : 'Auto-scroll desactivado', 'info');
+    }
+
+    function copyIntegratedLogs() {
+      const body = document.getElementById('integrated-console-body');
+      if (!body) return;
+      navigator.clipboard.writeText(body.textContent).then(() => {
+        showToast('✓ Registros de consola copiados', 'success');
+      });
+    }
+
+    function clearIntegratedLogs() {
+      const body = document.getElementById('integrated-console-body');
+      if (body) {
+        body.textContent = '[CONSOLA LIMPIADA] Esperando nuevos registros...';
+      }
     }
 
     async function restartAllContainers() {
