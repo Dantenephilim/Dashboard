@@ -536,15 +536,15 @@
               <button onclick="clearIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Limpiar pantalla de consola">
                 Limpiar
               </button>
-              <button onclick="toggleIntegratedConsole()" id="btn-toggle-console" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-600 text-[9px] font-semibold transition" title="Minimizar / Expandir consola">
-                Ocultar ▼
+              <button onclick="toggleIntegratedConsole()" id="btn-toggle-console" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-600 text-[9px] font-semibold transition" title="Minimizar / Expandir consola">
+                Mostrar Consola ▲
               </button>
             </div>
           </div>
 
           <!-- Console Terminal Body -->
-          <div id="integrated-console-body" class="p-2.5 font-mono text-[10px] leading-relaxed text-emerald-400/90 h-36 overflow-y-auto bg-[#02050a] selection:bg-cyan-900 whitespace-pre-wrap select-text">
-Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú para ver su actividad en vivo.
+          <div id="integrated-console-body" class="p-2.5 font-mono text-[10px] leading-relaxed text-emerald-400/90 h-36 overflow-y-auto bg-[#02050a] selection:bg-cyan-900 whitespace-pre-wrap select-text hidden">
+            Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú para ver su actividad en vivo.
           </div>
         </div>
 
@@ -1276,6 +1276,7 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
     }
 
     // Render Dedicated System Services Cards (Apache & Nessus)
+    // Render Dedicated System Services Cards (Apache & Nessus)
     function renderSystemServicesCards(services, metrics) {
       const cardsContainer = document.getElementById('system-services-cards');
       if (!cardsContainer) return;
@@ -1286,11 +1287,11 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
       const ap = srv.apache || { name: 'Apache HTTP Server', icon: '🪶', status: 'CAÍDO', port: 80, running: false, description: 'Servicio Caído (Puerto 80/443 inactivo)' };
       const ns = srv.nessus || { name: 'Tenable Nessus Scanner', icon: '🛡️', status: 'CAÍDO', port: 8834, running: false, description: 'Servicio Caído (Puerto 8834 cerrado)' };
 
-      const apRunning = Boolean(ap.running || ap.status === 'LEVANTADO' || ap.status === 'RUNNING');
+      const apRunning = Boolean(ap.running || (ap.status && ap.status.toUpperCase() === 'LEVANTADO') || (ap.status && ap.status.toUpperCase() === 'RUNNING'));
       const apPort = ap.port || 80;
       const apUrl = `http://${host}:${apPort}`;
 
-      const nsRunning = Boolean(ns.running || ns.status === 'LEVANTADO' || ns.status === 'RUNNING');
+      const nsRunning = Boolean(ns.running || (ns.status && ns.status.toUpperCase() === 'LEVANTADO') || (ns.status && ns.status.toUpperCase() === 'RUNNING'));
       const nsPort = ns.port || 8834;
       const nsUrl = `https://${host}:${nsPort}`;
 
@@ -1306,17 +1307,20 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
         hNsStatus.className = nsRunning ? 'font-black text-emerald-400' : 'font-black text-rose-400';
       }
 
+      const apPidsText = (ap.pids && ap.pids.length > 0) ? ` • PID ${ap.pids[0]}` : '';
+      const nsPidsText = (ns.pids && ns.pids.length > 0) ? ` • PID ${ns.pids[0]}` : '';
+
       const apStatusBadge = apRunning 
-        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
-        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
+        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.6)] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
+        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
 
       const nsStatusBadge = nsRunning 
-        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
-        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
+        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_12px_rgba(16,185,129,0.6)] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
+        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
 
       cardsContainer.innerHTML = `
         <!-- Apache Card -->
-        <div class="p-3 rounded-lg border transition-all ${apRunning ? 'bg-gradient-to-r from-emerald-950/40 via-[#0a121f] to-[#0a121f] border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-rose-950/30 via-[#0a121f] to-[#0a121f] border-rose-600/50 shadow-[0_0_12px_rgba(244,63,94,0.1)]'} flex items-center justify-between">
+        <div class="p-3 rounded-lg border transition-all ${apRunning ? 'bg-gradient-to-r from-emerald-950/50 via-[#0a121f] to-[#0a121f] border-emerald-500/70 shadow-[0_0_18px_rgba(16,185,129,0.2)]' : 'bg-gradient-to-r from-rose-950/30 via-[#0a121f] to-[#0a121f] border-rose-600/50 shadow-[0_0_12px_rgba(244,63,94,0.1)]'} flex items-center justify-between">
           <div class="flex items-center gap-3 overflow-hidden">
             <span class="text-3xl flex-shrink-0">🪶</span>
             <div class="flex flex-col truncate">
@@ -1324,22 +1328,22 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
                 <span class="font-bold text-slate-100 text-xs truncate">Apache Web Server</span>
                 ${apStatusBadge}
               </div>
-              <span class="text-[11px] ${apRunning ? 'text-emerald-300' : 'text-rose-300'} font-mono truncate font-medium mt-0.5">${ap.description || (apRunning ? 'Activo en puerto 80 TCP' : 'Servicio detenido o inactivo')}</span>
+              <span class="text-[11px] ${apRunning ? 'text-emerald-300' : 'text-rose-300'} font-mono truncate font-medium mt-0.5">${ap.description || (apRunning ? `Activo en puerto ${apPort} TCP${apPidsText}` : 'Servicio detenido o inactivo')}</span>
             </div>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
             ${apRunning ? `
-              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[10px] font-black transition flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.4)]" title="Abrir Apache en el navegador">
+              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[10px] font-black transition flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Abrir Apache en el navegador">
                 Abrir Web ↗
               </a>
             ` : `
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto 80</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto ${apPort}</span>
             `}
           </div>
         </div>
 
         <!-- Nessus Card -->
-        <div class="p-3 rounded-lg border transition-all ${nsRunning ? 'bg-gradient-to-r from-emerald-950/40 via-[#0a121f] to-[#0a121f] border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-rose-950/30 via-[#0a121f] to-[#0a121f] border-rose-600/50 shadow-[0_0_12px_rgba(244,63,94,0.1)]'} flex items-center justify-between">
+        <div class="p-3 rounded-lg border transition-all ${nsRunning ? 'bg-gradient-to-r from-emerald-950/50 via-[#0a121f] to-[#0a121f] border-emerald-500/70 shadow-[0_0_18px_rgba(16,185,129,0.2)]' : 'bg-gradient-to-r from-rose-950/30 via-[#0a121f] to-[#0a121f] border-rose-600/50 shadow-[0_0_12px_rgba(244,63,94,0.1)]'} flex items-center justify-between">
           <div class="flex items-center gap-3 overflow-hidden">
             <span class="text-3xl flex-shrink-0">🛡️</span>
             <div class="flex flex-col truncate">
@@ -1347,21 +1351,174 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
                 <span class="font-bold text-slate-100 text-xs truncate">Tenable Nessus Scanner</span>
                 ${nsStatusBadge}
               </div>
-              <span class="text-[11px] ${nsRunning ? 'text-emerald-300' : 'text-rose-300'} font-mono truncate font-medium mt-0.5">${ns.description || (nsRunning ? 'Activo en puerto 8834 HTTPS' : 'Servicio detenido o inactivo')}</span>
+              <span class="text-[11px] ${nsRunning ? 'text-emerald-300' : 'text-rose-300'} font-mono truncate font-medium mt-0.5">${ns.description || (nsRunning ? `Activo en puerto ${nsPort} HTTPS${nsPidsText}` : 'Servicio detenido o inactivo')}</span>
             </div>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
             ${nsRunning ? `
-              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[10px] font-black transition flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.4)]" title="Abrir consola web de Nessus">
+              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[10px] font-black transition flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Abrir consola web de Nessus">
                 Abrir Nessus ↗
               </a>
             ` : `
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto 8834</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto ${nsPort}</span>
             `}
           </div>
         </div>
       `;
     }
+
+    // =========================================================================
+    // SMART CONTAINER PORTS FORMATTER & DROPDOWN POPOVER
+    // =========================================================================
+    window._containerRemainingPorts = {};
+
+    function formatContainerPortsHtml(c, host) {
+      if (!c.ports || c.ports.length === 0) {
+        return '<span class="text-slate-600 text-[10px] font-mono">--</span>';
+      }
+
+      // Prioridad inteligente de puertos: Web UI y administración primero
+      function getPortScore(p) {
+        const num = Number(p.link_port || p.external || p.internal) || 0;
+        if ([80, 443, 8834, 9000, 8443, 8080, 3000, 5601, 5678, 8000, 8090, 11434, 9443, 5000, 8888, 8081, 4000].includes(num)) {
+          return 10000 - num;
+        }
+        if ([5432, 3306, 27017, 6379, 22, 9200, 1514, 1515, 514, 5044, 12201].includes(num)) {
+          return 5000 - num;
+        }
+        if (p.external || p.link_port) {
+          return 1000 - (num % 1000);
+        }
+        return 100;
+      }
+
+      const sorted = [...c.ports].sort((a, b) => getPortScore(b) - getPortScore(a));
+
+      function makeBadge(p) {
+        const pNum = p.link_port || p.external || p.internal;
+        if (pNum) {
+          const isHttps = (p.protocol === 'https' || pNum == 8834 || pNum == 443);
+          const proto = isHttps ? 'https' : 'http';
+          const url = `${proto}://${host}:${pNum}`;
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[10px] whitespace-nowrap" title="Abrir ${url}">${pNum} ↗</a>`;
+        }
+        return `<span class="text-slate-400 font-mono text-[10px] px-1 py-0.5 bg-slate-900 border border-slate-800 rounded whitespace-nowrap">${p.internal || '--'}/${p.protocol || 'tcp'}</span>`;
+      }
+
+      // Si tiene 2 puertos o menos, mostrarlos todos directamente
+      if (sorted.length <= 2) {
+        return sorted.map(makeBadge).join(' ');
+      }
+
+      // Si tiene más de 2 puertos, mostrar los 1-2 principales y desplegable para los demás
+      const primaryPorts = sorted.slice(0, 2);
+      const remainingPorts = sorted.slice(2);
+
+      window._containerRemainingPorts[c.id] = {
+        name: c.name,
+        ports: remainingPorts
+      };
+
+      const primaryHtml = primaryPorts.map(makeBadge).join(' ');
+      const dropdownTrigger = `
+        <button type="button" onclick="togglePortsDropdown('${c.id}', event)" class="ports-trigger-btn inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-800/90 hover:bg-slate-700 text-cyan-300 hover:text-white border border-slate-700 font-mono text-[9px] font-bold transition shadow-sm whitespace-nowrap cursor-pointer" title="Ver ${remainingPorts.length} puertos más de ${c.name}">
+          <span>+${remainingPorts.length} más</span>
+          <svg class="w-2.5 h-2.5 text-cyan-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+      `;
+
+      return `${primaryHtml} ${dropdownTrigger}`;
+    }
+
+    function togglePortsDropdown(cid, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+
+      const existing = document.getElementById('global-ports-popover');
+      if (existing && existing.getAttribute('data-cid') === cid) {
+        closePortsDropdown();
+        return;
+      }
+      closePortsDropdown();
+
+      const data = window._containerRemainingPorts && window._containerRemainingPorts[cid];
+      if (!data || !data.ports || data.ports.length === 0) return;
+
+      const host = window.location.hostname || 'localhost';
+      const btn = event.currentTarget;
+      const rect = btn.getBoundingClientRect();
+
+      const popover = document.createElement('div');
+      popover.id = 'global-ports-popover';
+      popover.setAttribute('data-cid', cid);
+      popover.className = 'fixed z-[99999] bg-[#0c1424] border border-cyan-500/70 rounded-lg shadow-2xl p-2.5 min-w-[220px] max-w-[320px] max-h-[260px] overflow-y-auto font-mono text-[10px] text-slate-200 backdrop-blur-md animate-fadeIn';
+
+      let itemsHtml = '';
+      data.ports.forEach(p => {
+        const pNum = p.link_port || p.external || p.internal;
+        const isWeb = [80, 443, 8834, 9000, 8443, 8080, 3000, 5601, 5678, 8000, 8090, 11434, 9443, 5000].includes(Number(pNum)) || (p.protocol === 'https');
+        const proto = (p.protocol === 'https' || pNum == 8834 || pNum == 443) ? 'https' : 'http';
+        const url = `${proto}://${host}:${pNum}`;
+
+        itemsHtml += `
+          <div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-slate-800/80 transition gap-2 border-b border-slate-800/40 last:border-b-0">
+            <div class="flex items-center gap-1.5 truncate">
+              <span class="w-1.5 h-1.5 rounded-full ${isWeb ? 'bg-cyan-400 shadow-[0_0_5px_rgba(34,211,238,0.7)]' : 'bg-slate-500'}"></span>
+              <span class="text-slate-200 font-semibold truncate">${p.display || `${pNum}/${p.protocol || 'tcp'}`}</span>
+            </div>
+            ${pNum ? `
+              <a href="${url}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-800 hover:text-white text-[9px] font-bold transition flex items-center gap-0.5 flex-shrink-0">
+                Abrir ↗
+              </a>
+            ` : `
+              <span class="text-slate-500 text-[9px] uppercase">${p.protocol || 'tcp'}</span>
+            `}
+          </div>
+        `;
+      });
+
+      popover.innerHTML = `
+        <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-700/80 text-[10px] font-bold text-slate-300">
+          <span class="flex items-center gap-1 truncate"><span class="text-cyan-400">🔌</span> Puertos de ${data.name} (${data.ports.length})</span>
+          <button onclick="closePortsDropdown()" class="text-slate-400 hover:text-white px-1 py-0.5 rounded hover:bg-slate-800 text-xs leading-none">✕</button>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          ${itemsHtml}
+        </div>
+      `;
+
+      document.body.appendChild(popover);
+
+      const popoverRect = popover.getBoundingClientRect();
+      let top = rect.bottom + 4;
+      let left = rect.left - 50;
+
+      if (left + popoverRect.width > window.innerWidth - 10) {
+        left = window.innerWidth - popoverRect.width - 10;
+      }
+      if (left < 10) left = 10;
+
+      if (top + popoverRect.height > window.innerHeight - 10) {
+        top = Math.max(10, rect.top - popoverRect.height - 4);
+      }
+
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+    }
+
+    function closePortsDropdown() {
+      const el = document.getElementById('global-ports-popover');
+      if (el) el.remove();
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#global-ports-popover') && !e.target.closest('.ports-trigger-btn')) {
+        closePortsDropdown();
+      }
+    });
+    window.addEventListener('resize', closePortsDropdown);
 
     let lastContainerFingerprint = '';
 
@@ -1392,13 +1549,13 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
       // Apache Host Service
       if (srv.apache) {
         const ap = srv.apache;
-        const apRunning = Boolean(ap.running || ap.status === 'RUNNING');
+        const apRunning = Boolean(ap.running || (ap.status && ap.status.toUpperCase() === 'LEVANTADO') || (ap.status && ap.status.toUpperCase() === 'RUNNING'));
         hostServicesList.push({
           id: 'host-apache',
           name: ap.name || 'Apache HTTP Server',
           image: ap.description || 'Apache Web Server (Ubuntu Host)',
           is_host: true,
-          status: apRunning ? 'running' : (ap.status === 'STOPPED' ? 'stopped' : 'stopped'),
+          status: apRunning ? 'running' : 'stopped',
           health: apRunning ? 'healthy' : '',
           ports: [{
             link_port: ap.port || 80,
@@ -1415,18 +1572,18 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
       // Nessus Host Service
       if (srv.nessus) {
         const ns = srv.nessus;
-        const nsRunning = Boolean(ns.running || ns.status === 'RUNNING');
+        const nsRunning = Boolean(ns.running || (ns.status && ns.status.toUpperCase() === 'LEVANTADO') || (ns.status && ns.status.toUpperCase() === 'RUNNING'));
         hostServicesList.push({
           id: 'host-nessus',
           name: ns.name || 'Tenable Nessus Scanner',
           image: ns.description || 'Nessus Vulnerability Scanner (Ubuntu Host)',
           is_host: true,
-          status: nsRunning ? 'running' : (ns.status === 'STOPPED' ? 'stopped' : 'stopped'),
+          status: nsRunning ? 'running' : 'stopped',
           health: nsRunning ? 'healthy' : '',
           ports: [{
             link_port: ns.port || 8834,
             internal: ns.port || 8834,
-            protocol: 'tcp'
+            protocol: 'https'
           }],
           service_info: { icon: '🛡️', label: 'Tenable Nessus' },
           cpu_percent: 0,
@@ -1475,7 +1632,7 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
       }
 
       if (currentFilter === 'running') {
-        list = list.filter(c => (c.status || '').toLowerCase() === 'running');
+        list = list.filter(c => (c.status || '').toLowerCase() === 'running' || (c.status || '').toUpperCase() === 'LEVANTADO');
       } else if (currentFilter === 'alert') {
         list = list.filter(c => (c.health || '').toLowerCase() === 'unhealthy' || (c.status || '').toLowerCase() === 'restarting' || (c.status || '').toLowerCase() === 'exited' || (c.status || '').toLowerCase() === 'stopped');
       }
@@ -1576,19 +1733,8 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
           }
         }
 
-        // Ports formatting
-        let portsHtml = '<span class="text-slate-600 text-[10px] font-mono">--</span>';
-        if (c.ports && c.ports.length > 0) {
-          portsHtml = c.ports.map(p => {
-            const pNum = p.link_port || p.external || p.internal;
-            if (pNum) {
-              const proto = (p.protocol === 'https' || pNum === 8834 || pNum === 443) ? 'https' : 'http';
-              const url = `${proto}://${host}:${pNum}`;
-              return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[10px]" title="Abrir servicio web">${pNum} ↗</a>`;
-            }
-            return `<span class="text-slate-400 font-mono text-[10px]">${p.internal || '--'}/${p.protocol || 'tcp'}</span>`;
-          }).join(' ');
-        }
+        // Ports formatting using smart priority and compact dropdown
+        const portsHtml = formatContainerPortsHtml(c, host);
 
         // Service categorization
         const sInfo = c.service_info || { icon: '🐳', label: 'App' };
@@ -1614,7 +1760,7 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
               </div>
 
               <!-- Col 3: Ports (2 cols) -->
-              <div class="col-span-2 flex flex-wrap items-center justify-center gap-1">
+              <div class="col-span-2 flex items-center justify-center gap-1 flex-wrap">
                 ${portsHtml}
               </div>
 
@@ -1622,7 +1768,7 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
               <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px]">
                 <span class="text-slate-400 hidden sm:inline">Servicio Host</span>
                 ${isRunning ? `
-                  <a href="${c.url || '#'}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white text-[9px] font-bold uppercase transition flex items-center gap-0.5">
+                  <a href="${c.url || '#'}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white text-[9px] font-bold uppercase transition flex items-center gap-0.5 shadow-sm">
                     Abrir ↗
                   </a>
                 ` : `
@@ -1657,7 +1803,7 @@ Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú
               </div>
 
               <!-- Col 3: Ports (2 cols) -->
-              <div class="col-span-2 flex flex-wrap items-center justify-center gap-1">
+              <div class="col-span-2 flex items-center justify-center gap-1 flex-wrap">
                 ${portsHtml}
               </div>
 

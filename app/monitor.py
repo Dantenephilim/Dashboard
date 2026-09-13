@@ -131,32 +131,38 @@ def categorize_service(image_name: str, name: str) -> dict:
 
 
 def parse_proc_net_tcp_ports() -> set:
-    """Lee sockets en escucha (estado 0A = TCP_LISTEN) directamente desde el host Ubuntu."""
+    """Lee sockets en escucha (estado 0A = TCP_LISTEN) directamente desde el host Ubuntu y namespaces."""
     ports = set()
     candidate_files = [
         '/host/proc/1/net/tcp',
         '/host/proc/1/net/tcp6',
         '/host/proc/net/tcp',
         '/host/proc/net/tcp6',
+        '/proc/1/net/tcp',
+        '/proc/1/net/tcp6',
         '/proc/net/tcp',
         '/proc/net/tcp6'
     ]
-    # Si /host/proc existe, buscar también en PIDs iniciales del host (systemd/init)
+    # Si /host/proc existe, inspeccionar también PIDs del host para abarcar todos los namespaces
     if os.path.exists('/host/proc'):
         try:
+            scanned = 0
             for pid_dir in os.listdir('/host/proc'):
-                if pid_dir.isdigit() and int(pid_dir) in [1, 2]:
+                if pid_dir.isdigit():
                     for sub in ['net/tcp', 'net/tcp6']:
                         tf = os.path.join('/host/proc', pid_dir, sub)
                         if tf not in candidate_files and os.path.exists(tf):
                             candidate_files.append(tf)
+                    scanned += 1
+                    if scanned >= 40:
+                        break
         except Exception:
             pass
 
     for p in candidate_files:
         if os.path.exists(p):
             try:
-                with open(p, 'r', encoding='utf-8') as f:
+                with open(p, 'r', encoding='utf-8', errors='ignore') as f:
                     for line in f.readlines()[1:]:
                         parts = line.strip().split()
                         # parts[3] es el estado ('0A' == TCP_LISTEN)
@@ -181,18 +187,23 @@ def check_host_service_installed(service_name: str) -> bool:
             "/host/etc/httpd",
             "/host/usr/sbin/httpd",
             "/host/lib/systemd/system/apache2.service",
-            "/host/etc/init.d/apache2"
+            "/host/etc/init.d/apache2",
+            "/etc/apache2",
+            "/usr/sbin/apache2"
         ],
         "nessus": [
             "/host/opt/nessus",
             "/host/etc/init.d/nessusd",
             "/host/lib/systemd/system/nessusd.service",
-            "/host/etc/systemd/system/nessusd.service"
+            "/host/etc/systemd/system/nessusd.service",
+            "/opt/nessus",
+            "/etc/init.d/nessusd"
         ],
         "nginx": [
             "/host/etc/nginx",
             "/host/usr/sbin/nginx",
-            "/host/lib/systemd/system/nginx.service"
+            "/host/lib/systemd/system/nginx.service",
+            "/etc/nginx"
         ],
         "mysql": [
             "/host/etc/mysql",
@@ -202,6 +213,71 @@ def check_host_service_installed(service_name: str) -> bool:
         ]
     }
     paths = checks.get(service_name, [])
+    return any(os.path.exists(p) for p in paths)
+
+
+def check_host_service_pid(service_name: str) -> tuple:
+    """Comprueba archivos PID de servicios nativos en el host para verificar si están activos."""
+    pid_files = {
+        "apache": [
+            "/host/run/apache2/apache2.pid",
+            "/host/var/run/apache2/apache2.pid",
+            "/host/run/apache2.pid",
+            "/host/var/run/apache2.pid",
+            "/host/run/httpd.pid",
+            "/host/var/run/httpd.pid",
+            "/host/run/httpd/httpd.pid",
+            "/host/var/run/httpd/httpd.pid",
+            "/run/apache2/apache2.pid",
+            "/var/run/apache2/apache2.pid",
+            "/run/apache2.pid",
+            "/var/run/apache2.pid",
+            "/run/httpd.pid",
+            "/run/httpd/httpd.pid"
+        ],
+        "nessus": [
+            "/host/opt/nessus/var/nessus/nessusd.pid",
+            "/opt/nessus/var/nessus/nessusd.pid",
+            "/host/run/nessusd.pid",
+            "/host/var/run/nessusd.pid",
+            "/run/nessusd.pid",
+            "/var/run/nessusd.pid"
+        ]
+    }
+    paths = pid_files.get(service_name, [])
+    for p in paths:
+        if os.path.exists(p):
+            try:
+                with open(p, 'r', errors='ignore') as f:
+                    content = f.read().strip()
+                    nums = [int(x) for x in content.split() if x.isdigit()]
+                    if nums:
+                        pid = nums[0]
+                        # Verificar si el proceso existe en /host/proc o /proc
+                        for proc_dir in [f"/host/proc/{pid}", f"/proc/{pid}"]:
+                            if os.path.exists(proc_dir):
+                                return True, pid, p
+                        try:
+                            if psutil.pid_exists(pid):
+                                return True, pid, p
+                        except Exception:
+                            pass
+                        # Si el archivo PID existe en /run de Ubuntu, el demonio está activo
+                        # (los servicios de Ubuntu eliminan el PID al detenerse)
+                        return True, pid, p
+            except Exception:
+                pass
+    return False, 0, ""
+
+
+def check_host_systemd_unit(unit_name: str) -> bool:
+    """Verifica si un unit de systemd está activo mediante archivos de invocación del host."""
+    paths = [
+        f"/host/run/systemd/units/invocation:{unit_name}",
+        f"/run/systemd/units/invocation:{unit_name}",
+        f"/host/run/systemd/units/{unit_name}",
+        f"/run/systemd/units/{unit_name}"
+    ]
     return any(os.path.exists(p) for p in paths)
 
 
@@ -236,12 +312,27 @@ def scan_host_processes() -> dict:
                     except Exception:
                         pass
 
+                stat_name = ""
+                stat_file = os.path.join(p_path, 'stat')
+                if os.path.exists(stat_file):
+                    try:
+                        with open(stat_file, 'r', errors='ignore') as f:
+                            stat_str = f.read()
+                            start_i = stat_str.find('(')
+                            end_i = stat_str.rfind(')')
+                            if start_i != -1 and end_i > start_i:
+                                stat_name = stat_str[start_i + 1:end_i].strip().lower()
+                    except Exception:
+                        pass
+
+                all_names = f"{comm} {cmdline} {stat_name}".lower()
+
                 # Detectar Apache
-                if comm in ['apache2', 'httpd'] or 'apache2' in cmdline or 'httpd' in cmdline:
+                if any(k in all_names for k in ['apache2', 'httpd', 'apache', 'rotatelogs']):
                     if 'apache' not in detected:
                         detected['apache'] = {
                             'name': 'Apache HTTP Server',
-                            'process': comm or 'apache2',
+                            'process': comm or stat_name or 'apache2',
                             'pids': [pid],
                             'is_running': True,
                             'category': 'web',
@@ -252,11 +343,11 @@ def scan_host_processes() -> dict:
                         detected['apache']['pids'].append(pid)
 
                 # Detectar Nessus
-                elif 'nessusd' in comm or 'nessus-service' in comm or 'nessus' in cmdline:
+                elif any(k in all_names for k in ['nessusd', 'nessus-service', 'nessus']):
                     if 'nessus' not in detected:
                         detected['nessus'] = {
                             'name': 'Tenable Nessus Scanner',
-                            'process': comm or 'nessusd',
+                            'process': comm or stat_name or 'nessusd',
                             'pids': [pid],
                             'is_running': True,
                             'category': 'security',
@@ -267,7 +358,7 @@ def scan_host_processes() -> dict:
                         detected['nessus']['pids'].append(pid)
 
                 # Detectar Nginx
-                elif comm == 'nginx' or 'nginx' in cmdline:
+                elif 'nginx' in all_names:
                     if 'nginx' not in detected:
                         detected['nginx'] = {
                             'name': 'Nginx Web Server',
@@ -280,11 +371,11 @@ def scan_host_processes() -> dict:
                         }
 
                 # Detectar MySQL / MariaDB
-                elif comm in ['mysqld', 'mariadbd'] or 'mysqld' in cmdline:
+                elif any(k in all_names for k in ['mysqld', 'mariadbd']):
                     if 'mysql' not in detected:
                         detected['mysql'] = {
                             'name': 'MySQL / MariaDB',
-                            'process': comm,
+                            'process': comm or 'mysqld',
                             'pids': [pid],
                             'is_running': True,
                             'category': 'database',
@@ -293,7 +384,7 @@ def scan_host_processes() -> dict:
                         }
 
                 # Detectar SSH
-                elif comm == 'sshd' or 'sshd' in cmdline:
+                elif 'sshd' in all_names:
                     if 'ssh' not in detected:
                         detected['ssh'] = {
                             'name': 'OpenSSH Server',
@@ -307,16 +398,18 @@ def scan_host_processes() -> dict:
         except Exception:
             pass
 
-    # Fallback psutil
+    # Fallback psutil (con o sin pid: host)
     if 'apache' not in detected or 'nessus' not in detected:
         try:
-            for p in psutil.process_iter(['pid', 'name']):
+            for p in psutil.process_iter(['pid', 'name', 'cmdline']):
                 pname = (p.info.get('name') or '').lower()
+                cmd = ' '.join(p.info.get('cmdline') or []).lower()
+                combined = f"{pname} {cmd}"
                 pid = p.info.get('pid')
-                if ('apache' in pname or 'httpd' in pname) and 'apache' not in detected:
-                    detected['apache'] = {'name': 'Apache HTTP Server', 'process': pname, 'pids': [pid], 'is_running': True, 'category': 'web', 'icon': '🪶', 'default_port': 80}
-                elif 'nessus' in pname and 'nessus' not in detected:
-                    detected['nessus'] = {'name': 'Tenable Nessus Scanner', 'process': pname, 'pids': [pid], 'is_running': True, 'category': 'security', 'icon': '🛡️', 'default_port': 8834}
+                if any(k in combined for k in ['apache2', 'httpd', 'apache']) and 'apache' not in detected:
+                    detected['apache'] = {'name': 'Apache HTTP Server', 'process': pname or 'apache2', 'pids': [pid], 'is_running': True, 'category': 'web', 'icon': '🪶', 'default_port': 80}
+                elif any(k in combined for k in ['nessusd', 'nessus-service', 'nessus']) and 'nessus' not in detected:
+                    detected['nessus'] = {'name': 'Tenable Nessus Scanner', 'process': pname or 'nessusd', 'pids': [pid], 'is_running': True, 'category': 'security', 'icon': '🛡️', 'default_port': 8834}
         except Exception:
             pass
 
@@ -325,26 +418,35 @@ def scan_host_processes() -> dict:
 
 def probe_tcp_port(port: int) -> bool:
     """Comprueba rápidamente si un puerto TCP está abierto conectándose mediante socket."""
-    candidate_ips = ["127.0.0.1", "localhost"]
+    candidate_ips = [
+        "127.0.0.1",
+        "localhost",
+        "host.docker.internal",
+        "172.17.0.1",
+        "172.18.0.1",
+        "172.19.0.1",
+        "172.20.0.1"
+    ]
     # Detectar la IP del host Ubuntu (default gateway del contenedor Docker)
-    try:
-        if os.path.exists("/proc/net/route"):
-            with open("/proc/net/route", "r") as f:
-                for line in f.readlines()[1:]:
-                    parts = line.strip().split()
-                    if len(parts) >= 3 and parts[1] == "00000000":
-                        gw_hex = parts[2]
-                        gw_ip = socket.inet_ntoa(bytes.fromhex(gw_hex)[::-1])
-                        if gw_ip and gw_ip != "0.0.0.0" and gw_ip not in candidate_ips:
-                            candidate_ips.insert(0, gw_ip)
-                        break
-    except Exception:
-        pass
+    for route_file in ["/proc/net/route", "/host/proc/net/route"]:
+        try:
+            if os.path.exists(route_file):
+                with open(route_file, "r") as f:
+                    for line in f.readlines()[1:]:
+                        parts = line.strip().split()
+                        if len(parts) >= 3 and parts[1] == "00000000":
+                            gw_hex = parts[2]
+                            gw_ip = socket.inet_ntoa(bytes.fromhex(gw_hex)[::-1])
+                            if gw_ip and gw_ip != "0.0.0.0" and gw_ip not in candidate_ips:
+                                candidate_ips.insert(0, gw_ip)
+                            break
+        except Exception:
+            pass
 
     for ip in candidate_ips:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(0.2)
+                s.settimeout(0.18)
                 if s.connect_ex((ip, port)) == 0:
                     return True
         except Exception:
@@ -353,26 +455,38 @@ def probe_tcp_port(port: int) -> bool:
 
 
 def get_system_services(doc: dict, host_ports: set) -> dict:
-    """Retorna el estado detallado de los servicios clave del sistema (Apache, Nessus, etc.)."""
+    """Retorna el estado detallado y a prueba de fallos de los servicios clave del sistema (Apache, Nessus, etc.)."""
     host_procs = scan_host_processes()
     
     # Revisar si corren dentro de contenedores Docker
     docker_containers = doc.get("containers", []) if isinstance(doc, dict) else []
-    apache_in_docker = next((c for c in docker_containers if any(k in (c.get("name", "") + " " + c.get("image", "")).lower() for k in ["apache", "httpd"])), None)
-    nessus_in_docker = next((c for c in docker_containers if "nessus" in (c.get("name", "") + " " + c.get("image", "")).lower()), None)
     
-    # 1. Apache HTTP Server
-    apache_installed = check_host_service_installed("apache") or bool(apache_in_docker)
+    # 1. APACHE HTTP SERVER (Multi-layer Detection)
+    # Layer 1: Proceso encontrado en host / psutil
     apache_proc = host_procs.get("apache")
+    # Layer 2: PID File activo en /run o /var/run
+    apache_pid_alive, apache_pid, _ = check_host_service_pid("apache")
+    # Layer 3: Systemd unit de apache2 activo
+    apache_systemd_alive = check_host_systemd_unit("apache2.service") or check_host_systemd_unit("httpd.service")
+    # Layer 4: Sockets en escucha (80, 443, 8080)
     apache_port_active = (
         80 in host_ports or 443 in host_ports or 8080 in host_ports or
         probe_tcp_port(80) or probe_tcp_port(443) or probe_tcp_port(8080)
     )
+    # Layer 5: Contenedor Docker de Apache
+    apache_in_docker = next((c for c in docker_containers if any(k in (c.get("name", "") + " " + c.get("image", "")).lower() for k in ["apache", "httpd", "lamp"]) or any(p.get("external") in ["80", 80, "443", 443, "8080", 8080] for p in c.get("ports", []))), None)
     apache_docker_running = bool(apache_in_docker and apache_in_docker.get("status", "").lower() == "running")
     
-    apache_running = bool(apache_proc) or apache_port_active or apache_docker_running
+    apache_running = bool(apache_proc) or apache_pid_alive or apache_systemd_alive or apache_port_active or apache_docker_running
+    apache_installed = check_host_service_installed("apache") or apache_running or bool(apache_in_docker)
     apache_active_port = 80 if (80 in host_ports or probe_tcp_port(80)) else (443 if (443 in host_ports or probe_tcp_port(443)) else (8080 if (8080 in host_ports or probe_tcp_port(8080)) else 80))
     
+    apache_pids = []
+    if apache_proc and apache_proc.get("pids"):
+        apache_pids = apache_proc.get("pids", [])
+    elif apache_pid_alive and apache_pid:
+        apache_pids = [apache_pid]
+
     if apache_running:
         apache_status = "LEVANTADO"
         apache_color = "emerald"
@@ -384,15 +498,29 @@ def get_system_services(doc: dict, host_ports: set) -> dict:
         apache_source = "host"
         apache_desc = "Servicio Caído (Puerto 80/443 inactivo o detenido)"
 
-    # 2. Tenable Nessus Scanner
-    nessus_installed = check_host_service_installed("nessus") or bool(nessus_in_docker)
+    # 2. TENABLE NESSUS SCANNER (Multi-layer Detection)
+    # Layer 1: Proceso nessusd en host / psutil
     nessus_proc = host_procs.get("nessus")
+    # Layer 2: PID File activo en /opt/nessus/var/nessus/nessusd.pid
+    nessus_pid_alive, nessus_pid, _ = check_host_service_pid("nessus")
+    # Layer 3: Systemd unit de nessusd activo
+    nessus_systemd_alive = check_host_systemd_unit("nessusd.service")
+    # Layer 4: Puerto 8834 en escucha
     nessus_port_active = 8834 in host_ports or probe_tcp_port(8834)
+    # Layer 5: Contenedor Docker de Nessus
+    nessus_in_docker = next((c for c in docker_containers if "nessus" in (c.get("name", "") + " " + c.get("image", "")).lower() or any(p.get("external") in ["8834", 8834] for p in c.get("ports", []))), None)
     nessus_docker_running = bool(nessus_in_docker and nessus_in_docker.get("status", "").lower() == "running")
     
-    nessus_running = bool(nessus_proc) or nessus_port_active or nessus_docker_running
+    nessus_running = bool(nessus_proc) or nessus_pid_alive or nessus_systemd_alive or nessus_port_active or nessus_docker_running
+    nessus_installed = check_host_service_installed("nessus") or nessus_running or bool(nessus_in_docker)
     nessus_active_port = 8834
     
+    nessus_pids = []
+    if nessus_proc and nessus_proc.get("pids"):
+        nessus_pids = nessus_proc.get("pids", [])
+    elif nessus_pid_alive and nessus_pid:
+        nessus_pids = [nessus_pid]
+
     if nessus_running:
         nessus_status = "LEVANTADO"
         nessus_color = "emerald"
@@ -417,7 +545,7 @@ def get_system_services(doc: dict, host_ports: set) -> dict:
             "protocol": "http",
             "source": apache_source,
             "description": apache_desc,
-            "pids": apache_proc.get("pids", []) if apache_proc else []
+            "pids": apache_pids
         },
         "nessus": {
             "name": "Tenable Nessus Scanner",
@@ -431,7 +559,7 @@ def get_system_services(doc: dict, host_ports: set) -> dict:
             "protocol": "https",
             "source": nessus_source,
             "description": nessus_desc,
-            "pids": nessus_proc.get("pids", []) if nessus_proc else []
+            "pids": nessus_pids
         }
     }
 

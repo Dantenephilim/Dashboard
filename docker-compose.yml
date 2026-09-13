@@ -5,6 +5,9 @@ services:
       dockerfile: Dockerfile
     container_name: server-monitor
     restart: unless-stopped
+    pid: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       # Mapeo explícito al puerto 8090 (configurable mediante .env)
       - "${PORT:-8090}:8090"
@@ -18,6 +21,8 @@ services:
       - /:/host:ro
       # Montaje de /proc del host para escanear puertos de Apache, Nessus y servicios nativos
       - /proc:/host/proc:ro
+      # Montaje de /run para detectar PIDs de Apache, Nessus y servicios systemd
+      - /run:/host/run:ro
       # Montaje para detectar versión de Ubuntu Server y Hostname
       - /etc/os-release:/etc/host-os-release:ro
       - /etc/hostname:/etc/host_hostname:ro
