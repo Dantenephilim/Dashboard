@@ -109,25 +109,25 @@ def categorize_service(image_name: str, name: str) -> dict:
     elif "open-webui" in combined:
         return {"category": "ai", "label": "Open-WebUI", "badge_color": "violet", "icon": "🤖"}
     elif "n8n" in combined:
-        return {"category": "ai", "label": "n8n Automatización", "badge_color": "rose", "icon": "⚡"}
+        return {"category": "ai", "label": "n8n Automation", "badge_color": "rose", "icon": "⚡"}
     elif "osiris" in combined:
         return {"category": "web", "label": "Osiris Web", "badge_color": "sky", "icon": "👁️"}
     elif "mcp" in combined:
-        return {"category": "mcp", "label": "Servidor MCP", "badge_color": "teal", "icon": "🔌"}
+        return {"category": "mcp", "label": "MCP Server", "badge_color": "teal", "icon": "🔌"}
     elif any(k in combined for k in ["postgres", "mysql", "mariadb", "mongo", "redis", "memcached", "sqlite", "clickhouse"]):
-        return {"category": "database", "label": "Base de Datos", "badge_color": "indigo", "icon": "🐘" if "postgres" in combined else "🗄️"}
+        return {"category": "database", "label": "Database", "badge_color": "indigo", "icon": "🐘" if "postgres" in combined else "🗄️"}
     elif any(k in combined for k in ["grafana", "prometheus", "netdata", "portainer", "uptime-kuma", "loki", "jaeger", "cadvisor", "dozzle"]):
-        return {"category": "monitoring", "label": "Monitoreo", "badge_color": "emerald", "icon": "📊"}
+        return {"category": "monitoring", "label": "Monitoring", "badge_color": "emerald", "icon": "📊"}
     elif any(k in combined for k in ["nginx", "caddy", "traefik", "node", "next", "vue", "react", "fastapi", "flask", "django", "wordpress", "ghost"]):
-        return {"category": "web", "label": "Servicio Web", "badge_color": "sky", "icon": "🌐"}
+        return {"category": "web", "label": "Web Service", "badge_color": "sky", "icon": "🌐"}
     elif any(k in combined for k in ["nextcloud", "owncloud", "minio", "s3", "seafile", "syncthing"]):
         return {"category": "storage", "label": "Cloud / Storage", "badge_color": "amber", "icon": "☁️"}
     elif any(k in combined for k in ["plex", "jellyfin", "emby", "radarr", "sonarr", "transmission", "qbittorrent"]):
         return {"category": "media", "label": "Multimedia", "badge_color": "rose", "icon": "🎬"}
     elif any(k in combined for k in ["wireguard", "tailscale", "pihole", "adguard", "openvpn", "cloudflared"]):
-        return {"category": "network", "label": "Red / VPN", "badge_color": "teal", "icon": "🛡️"}
+        return {"category": "network", "label": "Network / VPN", "badge_color": "teal", "icon": "🛡️"}
     else:
-        return {"category": "general", "label": "Aplicación", "badge_color": "zinc", "icon": "📦"}
+        return {"category": "general", "label": "Application", "badge_color": "zinc", "icon": "📦"}
 
 
 def parse_proc_net_tcp_ports() -> set:
@@ -488,15 +488,15 @@ def get_system_services(doc: dict, host_ports: set) -> dict:
         apache_pids = [apache_pid]
 
     if apache_running:
-        apache_status = "LEVANTADO"
+        apache_status = "UP"
         apache_color = "emerald"
         apache_source = "docker" if apache_docker_running else "host"
-        apache_desc = f"Servicio Levantado (Activo en puerto {apache_active_port} TCP)"
+        apache_desc = f"Service Online (Active on port {apache_active_port} TCP)"
     else:
-        apache_status = "CAÍDO"
+        apache_status = "DOWN"
         apache_color = "rose"
         apache_source = "host"
-        apache_desc = "Servicio Caído (Puerto 80/443 inactivo o detenido)"
+        apache_desc = f"Service Offline (Port {apache_active_port} inactive or stopped)"
 
     # 2. TENABLE NESSUS SCANNER (Multi-layer Detection)
     # Layer 1: Proceso nessusd en host / psutil
@@ -522,15 +522,15 @@ def get_system_services(doc: dict, host_ports: set) -> dict:
         nessus_pids = [nessus_pid]
 
     if nessus_running:
-        nessus_status = "LEVANTADO"
+        nessus_status = "UP"
         nessus_color = "emerald"
         nessus_source = "docker" if nessus_docker_running else "host"
-        nessus_desc = f"Servicio Levantado (Activo en puerto 8834 HTTPS)"
+        nessus_desc = f"Service Online (Active on port 8834 HTTPS)"
     else:
-        nessus_status = "CAÍDO"
+        nessus_status = "DOWN"
         nessus_color = "rose"
         nessus_source = "host"
-        nessus_desc = "Servicio Caído (Puerto 8834 cerrado o inactivo)"
+        nessus_desc = "Service Offline (Port 8834 closed or inactive)"
 
     return {
         "apache": {
@@ -591,7 +591,7 @@ def scan_host_listening_services() -> list:
                         proc_name = f"PID {pid}"
 
                 known = KNOWN_PORT_SERVICES.get(port)
-                service_desc = known[0] if known else f"Servicio en puerto {port}"
+                service_desc = known[0] if known else f"Service on port {port}"
                 category = known[1] if known else "web"
                 icon = known[2] if known else "🌐"
 
@@ -622,7 +622,7 @@ def scan_host_listening_services() -> list:
                 if known:
                     desc, cat, ico = known[0], known[1], known[2]
                 else:
-                    desc = f"Servicio Web / Puerto {port}"
+                    desc = f"Web Service / Port {port}"
                     cat = "web"
                     ico = "🌐"
 
@@ -1074,7 +1074,7 @@ def get_docker_metrics() -> dict:
             return {
                 "available": False,
                 "is_demo": True,
-                "error": f"Docker daemon no detectado localmente. Mostrando contenedores de demostración interactivos.",
+                "error": "Local Docker daemon not detected. Showing interactive demonstration containers.",
                 "total": len(demo_containers),
                 "running": running,
                 "stopped": len(demo_containers) - running,
@@ -1089,7 +1089,7 @@ def get_docker_metrics() -> dict:
         return {
             "available": False,
             "is_demo": True,
-            "error": f"Error al listar contenedores ({str(e)}). Mostrando modo de demostración.",
+            "error": f"Error listing containers ({str(e)}). Showing demonstration mode.",
             "total": len(demo_containers),
             "running": running,
             "stopped": len(demo_containers) - running,
@@ -1229,8 +1229,8 @@ def compute_alerts(system: dict, docker: dict) -> dict:
             "id": "alert-cpu-crit",
             "level": "critical",
             "source": "Host CPU",
-            "title": "Uso Crítico de CPU",
-            "message": f"El uso global de CPU alcanzó el {cpu_pct:.1f}%. Posible sobrecarga de procesos.",
+            "title": "Critical CPU Usage",
+            "message": f"Global CPU usage reached {cpu_pct:.1f}%. Possible process overload.",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
     elif cpu_pct >= 75:
@@ -1238,8 +1238,8 @@ def compute_alerts(system: dict, docker: dict) -> dict:
             "id": "alert-cpu-warn",
             "level": "warning",
             "source": "Host CPU",
-            "title": "Uso Elevado de CPU",
-            "message": f"El uso de CPU está en {cpu_pct:.1f}%.",
+            "title": "High CPU Usage",
+            "message": f"CPU usage is at {cpu_pct:.1f}%.",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
 
@@ -1249,18 +1249,18 @@ def compute_alerts(system: dict, docker: dict) -> dict:
         alerts.append({
             "id": "alert-mem-crit",
             "level": "critical",
-            "source": "Host Memoria",
-            "title": "Memoria RAM Crítica",
-            "message": f"La memoria RAM ocupada está al {mem_pct:.1f}%. Riesgo de activación de OOM-killer.",
+            "source": "Host Memory",
+            "title": "Critical RAM Usage",
+            "message": f"Occupied RAM is at {mem_pct:.1f}%. Risk of OOM-killer activation.",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
     elif mem_pct >= 80:
         alerts.append({
             "id": "alert-mem-warn",
             "level": "warning",
-            "source": "Host Memoria",
-            "title": "Memoria RAM Elevada",
-            "message": f"La memoria RAM ocupada está al {mem_pct:.1f}%.",
+            "source": "Host Memory",
+            "title": "High RAM Usage",
+            "message": f"Occupied RAM is at {mem_pct:.1f}%.",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
 
@@ -1270,18 +1270,18 @@ def compute_alerts(system: dict, docker: dict) -> dict:
         alerts.append({
             "id": "alert-disk-crit",
             "level": "critical",
-            "source": "Almacenamiento",
-            "title": "Disco Casi Lleno",
-            "message": f"Espacio en disco ocupado al {disk_pct:.1f}%. Libere espacio inmediatamente.",
+            "source": "Storage",
+            "title": "Disk Almost Full",
+            "message": f"Disk space used is at {disk_pct:.1f}%. Free up space immediately.",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
     elif disk_pct >= 80:
         alerts.append({
             "id": "alert-disk-warn",
             "level": "warning",
-            "source": "Almacenamiento",
-            "title": "Espacio en Disco Limitado",
-            "message": f"Espacio en disco ocupado al {disk_pct:.1f}%.",
+            "source": "Storage",
+            "title": "Low Disk Space",
+            "message": f"Disk space used is at {disk_pct:.1f}%.",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
 
@@ -1293,8 +1293,8 @@ def compute_alerts(system: dict, docker: dict) -> dict:
             "id": "alert-load-crit",
             "level": "critical",
             "source": "Host Load",
-            "title": "Sobrecarga Severa del Sistema",
-            "message": f"Load avg 1min ({load_1m:.2f}) supera el 200% de la capacidad de núcleos ({cores}).",
+            "title": "Severe System Overload",
+            "message": f"1-min load avg ({load_1m:.2f}) exceeds 200% of core capacity ({cores}).",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
     elif load_1m > (cores * 1.2):
@@ -1302,14 +1302,14 @@ def compute_alerts(system: dict, docker: dict) -> dict:
             "id": "alert-load-warn",
             "level": "warning",
             "source": "Host Load",
-            "title": "Carga de Sistema Elevada",
-            "message": f"Load avg 1min ({load_1m:.2f}) excede los núcleos físicos disponibles ({cores}).",
+            "title": "High System Load",
+            "message": f"1-min load avg ({load_1m:.2f}) exceeds available physical cores ({cores}).",
             "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
         })
 
     # 5. Alertas de Contenedores Docker
     for c in docker.get("containers", []):
-        c_name = c.get("name", "Contenedor")
+        c_name = c.get("name", "Container")
         c_status = (c.get("status") or "").lower()
         c_health = (c.get("health") or "").lower()
         cat = (c.get("service_info") or {}).get("category", "")
@@ -1319,8 +1319,8 @@ def compute_alerts(system: dict, docker: dict) -> dict:
                 "id": f"alert-{c.get('id', c_name)}-unhealthy",
                 "level": "critical",
                 "source": "Docker Container",
-                "title": f"Salud Comprometida: {c_name}",
-                "message": f"El healthcheck de '{c_name}' falló repetidamente (UNHEALTHY). Requiere verificación.",
+                "title": f"Compromised Health: {c_name}",
+                "message": f"Healthcheck for '{c_name}' failed repeatedly (UNHEALTHY). Verification required.",
                 "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
             })
 
@@ -1329,8 +1329,8 @@ def compute_alerts(system: dict, docker: dict) -> dict:
                 "id": f"alert-{c.get('id', c_name)}-restart",
                 "level": "warning",
                 "source": "Docker Container",
-                "title": f"Bucle de Reinicio: {c_name}",
-                "message": f"El contenedor '{c_name}' está en un ciclo inestable de reinicios continuos.",
+                "title": f"Restart Loop: {c_name}",
+                "message": f"Container '{c_name}' is in an unstable continuous restart loop.",
                 "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
             })
         elif c_status in ["dead", "exited"] and cat in ["security", "database", "ai", "logging"]:
@@ -1338,8 +1338,8 @@ def compute_alerts(system: dict, docker: dict) -> dict:
                 "id": f"alert-{c.get('id', c_name)}-stopped",
                 "level": "warning",
                 "source": "Docker Container",
-                "title": f"Servicio Esencial Detenido: {c_name}",
-                "message": f"El servicio crítico '{c_name}' ({cat.upper()}) está detenido.",
+                "title": f"Essential Service Stopped: {c_name}",
+                "message": f"Critical service '{c_name}' ({cat.upper()}) is stopped.",
                 "timestamp": datetime.now(timezone.utc).strftime("%H:%M:%S")
             })
 
@@ -1478,7 +1478,7 @@ def get_full_metrics() -> dict:
                 "port": 8834,
                 "display_port": "8834/tcp",
                 "category": "security",
-                "category_label": "Escáner Vulnerabilidades",
+                "category_label": "Vulnerability Scanner",
                 "icon": "🛡️",
                 "link_port": 8834,
                 "protocol": "https",
@@ -1511,7 +1511,7 @@ def container_action(container_id: str, action: str) -> dict:
             global _docker_client
             _docker_client = client
         except Exception:
-            return {"status": "error", "message": "Docker daemon no accesible o permisos insuficientes en docker.sock."}
+            return {"status": "error", "message": "Docker daemon not accessible or insufficient permissions on docker.sock."}
 
     try:
         container = client.containers.get(container_id)
@@ -1519,18 +1519,18 @@ def container_action(container_id: str, action: str) -> dict:
 
         if action == "start":
             container.start()
-            return {"status": "ok", "action": "start", "container": name, "message": f"Contenedor '{name}' iniciado exitosamente."}
+            return {"status": "ok", "action": "start", "container": name, "message": f"Container '{name}' started successfully."}
         elif action == "stop":
             container.stop(timeout=10)
-            return {"status": "ok", "action": "stop", "container": name, "message": f"Contenedor '{name}' detenido correctamente."}
+            return {"status": "ok", "action": "stop", "container": name, "message": f"Container '{name}' stopped successfully."}
         elif action == "restart":
             container.restart(timeout=10)
-            return {"status": "ok", "action": "restart", "container": name, "message": f"Contenedor '{name}' reiniciado correctamente."}
+            return {"status": "ok", "action": "restart", "container": name, "message": f"Container '{name}' restarted successfully."}
         else:
-            return {"status": "error", "message": f"Acción '{action}' inválida. Use start, stop o restart."}
+            return {"status": "error", "message": f"Invalid action '{action}'. Use start, stop or restart."}
     except docker.errors.NotFound:
-        return {"status": "error", "message": f"Contenedor '{container_id}' no encontrado en Docker."}
+        return {"status": "error", "message": f"Container '{container_id}' not found in Docker."}
     except docker.errors.APIError as e:
-        return {"status": "error", "message": f"Error de Docker: {getattr(e, 'explanation', str(e))}"}
+        return {"status": "error", "message": f"Docker error: {getattr(e, 'explanation', str(e))}"}
     except Exception as e:
-        return {"status": "error", "message": f"Error al ejecutar '{action}': {str(e)}"}
+        return {"status": "error", "message": f"Error executing '{action}': {str(e)}"}

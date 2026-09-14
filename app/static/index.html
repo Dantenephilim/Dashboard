@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -190,7 +190,7 @@
         </button>
 
         <!-- Bell Icon Button -->
-        <button onclick="openAlertModal('all')" title="Ver todas las alertas" class="relative p-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-400 hover:border-cyan-500 transition">
+        <button onclick="openAlertModal('all')" title="View all alerts" class="relative p-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-400 hover:border-cyan-500 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
@@ -198,13 +198,13 @@
         </button>
 
         <!-- Updates / Sync Button -->
-        <button onclick="openUpdateModal()" title="Comprobar actualizaciones en GitHub" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 font-mono text-[11px] transition">
+        <button onclick="openUpdateModal()" title="Check for updates on GitHub" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 font-mono text-[11px] transition">
           <span id="update-indicator" class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
           <span id="btn-update-label">v2.3.0 Sync</span>
         </button>
 
         <!-- GitHub Direct Link Button -->
-        <a href="https://github.com/Dantenephilim/Dashboard" target="_blank" rel="noopener noreferrer" title="Ver repositorio en GitHub" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500/80 font-mono text-[11px] transition">
+        <a href="https://github.com/Dantenephilim/Dashboard" target="_blank" rel="noopener noreferrer" title="View GitHub repository" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500/80 font-mono text-[11px] transition">
           <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           <span class="hidden sm:inline">GitHub ↗</span>
         </a>
@@ -246,7 +246,7 @@
             <!-- Left: Per-Core Heatmap Bars (7 cols) -->
             <div id="cores-container" class="sm:col-span-7 flex flex-col gap-1 pr-1 max-h-48 overflow-y-auto">
               <!-- Dynamically populated per core -->
-              <div class="text-slate-500 text-[10px] py-2 text-center">Cargando núcleos...</div>
+              <div class="text-slate-500 text-[10px] py-2 text-center">Loading cores...</div>
             </div>
 
             <!-- Right: Circular Aggregate Speedometer Gauge (5 cols) -->
@@ -398,7 +398,7 @@
             <!-- CPU USAGE TIMELINE CHART -->
             <div class="bg-[#090e17]/80 border border-slate-800/80 rounded-md p-2 flex flex-col">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">CPU USAGE (Historial)</span>
+                <span class="font-mono font-bold text-[10px] text-slate-400 uppercase">CPU USAGE (History)</span>
                 <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/40">60s Live</span>
               </div>
               <div class="h-24 w-full">
@@ -449,11 +449,11 @@
           </div>
 
           <div class="flex items-center gap-1.5">
-            <button onclick="restartAllContainers()" title="Reiniciar todos los contenedores en ejecución" class="px-2 py-1 rounded text-[11px] font-mono font-semibold bg-slate-900 border border-slate-700 hover:border-amber-500 hover:text-amber-300 text-slate-300 transition flex items-center gap-1">
+            <button onclick="restartAllContainers()" title="Restart all running containers" class="px-2 py-1 rounded text-[11px] font-mono font-semibold bg-slate-900 border border-slate-700 hover:border-amber-500 hover:text-amber-300 text-slate-300 transition flex items-center gap-1">
               <svg class="w-3 h-3 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               Restart All
             </button>
-            <button onclick="openUpdateModal()" title="Instalar o actualizar servicios" class="px-2 py-1 rounded text-[11px] font-mono font-semibold bg-cyan-950/80 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 transition flex items-center gap-1">
+            <button onclick="openUpdateModal()" title="Install or update services" class="px-2 py-1 rounded text-[11px] font-mono font-semibold bg-cyan-950/80 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 transition flex items-center gap-1">
               <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
               Deploy / Updates
             </button>
@@ -465,9 +465,9 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-200 uppercase tracking-wider">
               <span class="text-emerald-400 text-sm">🌐</span>
-              <span>ESTADO DE SERVICIOS: APACHE & NESSUS</span>
+              <span>SYSTEM SERVICES STATUS: APACHE & NESSUS</span>
             </div>
-            <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/50">Monitoreo en Tiempo Real</span>
+            <span class="text-[9px] font-mono text-cyan-400 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-700/50">Real-Time Monitoring</span>
           </div>
 
           <!-- Cards Grid for Apache & Nessus (Sleek Ribbon Layout) -->
@@ -477,11 +477,11 @@
               <div class="flex items-center gap-2 overflow-hidden min-w-0">
                 <span class="text-lg flex-shrink-0">🪶</span>
                 <span class="font-bold text-slate-100 text-xs truncate">Apache</span>
-                <span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>
-                <span class="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">Puerto 80</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>DOWN</span>
+                <span class="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">Port 80</span>
               </div>
               <div class="flex items-center gap-1.5 flex-shrink-0 ml-1">
-                <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto 80</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Port 80</span>
               </div>
             </div>
 
@@ -490,11 +490,11 @@
               <div class="flex items-center gap-2 overflow-hidden min-w-0">
                 <span class="text-lg flex-shrink-0">🛡️</span>
                 <span class="font-bold text-slate-100 text-xs truncate">Nessus</span>
-                <span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>
-                <span class="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">Puerto 8834</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>DOWN</span>
+                <span class="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">Port 8834</span>
               </div>
               <div class="flex items-center gap-1.5 flex-shrink-0 ml-1">
-                <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto 8834</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Port 8834</span>
               </div>
             </div>
           </div>
@@ -505,16 +505,16 @@
           
           <!-- Search input -->
           <div class="relative flex-1 min-w-[180px]">
-            <input type="text" id="search-container" placeholder="Buscar por nombre, servicio, imagen o puerto..." 
+            <input type="text" id="search-container" placeholder="Search by name, service, image or port..." 
                    class="w-full bg-slate-900/90 border border-slate-700/80 rounded px-2.5 py-1 text-slate-200 placeholder-slate-500 text-[11px] font-mono focus:outline-none focus:border-cyan-500 transition">
             <svg class="w-3.5 h-3.5 absolute right-2.5 top-2 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
 
           <!-- Category / Status Filters -->
           <div class="flex items-center gap-1 font-mono text-[10px]">
-            <button onclick="setFilter('all')" class="filter-btn active px-2.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40" data-filter="all">Todos</button>
-            <button onclick="setFilter('running')" class="filter-btn px-2.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="running">Activos</button>
-            <button onclick="setFilter('alert')" class="filter-btn px-2.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Alertas</button>
+            <button onclick="setFilter('all')" class="filter-btn active px-2.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40" data-filter="all">All</button>
+            <button onclick="setFilter('running')" class="filter-btn px-2.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="running">Running</button>
+            <button onclick="setFilter('alert')" class="filter-btn px-2.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Alerts</button>
           </div>
         </div>
 
@@ -522,25 +522,25 @@
         <div class="flex items-center justify-between px-2.5 py-1 bg-slate-900/90 border border-slate-800/80 rounded text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
           <div class="flex items-center gap-2">
             <span class="text-cyan-400">🐳</span>
-            <span>CONTENEDORES ACTIVOS (VISTA EN PARALELO)</span>
+            <span>ACTIVE CONTAINERS (PARALLEL VIEW)</span>
           </div>
           <div class="flex items-center gap-3 text-[9px] text-slate-500">
-            <span>PUERTOS PRIMARIOS</span>
+            <span>PRIMARY PORTS</span>
             <span>•</span>
-            <span>CPU EN TIEMPO REAL</span>
+            <span>REAL-TIME CPU</span>
           </div>
         </div>
 
         <!-- Demo Mode Notice (if applicable) -->
         <div id="demo-banner" class="hidden rounded border border-amber-500/40 bg-amber-950/20 px-2.5 py-1.5 text-amber-200 text-[11px] flex items-center justify-between">
-          <span>💡 <b>Modo Vista Previa:</b> Mostrando contenedores y servicios del entorno de producción.</span>
-          <span class="text-[10px] font-mono text-amber-400 underline cursor-pointer" onclick="openUpdateModal()">Verificar Docker</span>
+          <span>💡 <b>Preview Mode:</b> Displaying production environment containers and services.</span>
+          <span class="text-[10px] font-mono text-amber-400 underline cursor-pointer" onclick="openUpdateModal()">Check Docker</span>
         </div>
 
         <!-- Containers List (2-Column Compact Grid - All Containers Visible Without Scrolling) -->
         <div id="containers-list" class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-1.5 overflow-y-auto pr-1">
           <!-- Dynamically filled with container rows -->
-          <div class="col-span-1 md:col-span-2 text-center py-8 text-slate-500 font-mono">Escaneando contenedores...</div>
+          <div class="col-span-1 md:col-span-2 text-center py-8 text-slate-500 font-mono">Scanning containers...</div>
         </div>
 
         <!-- INTEGRATED LIVE LOGS & CONSOLE (DOZZLE EMBEDDED STREAM) -->
@@ -549,32 +549,32 @@
           <div class="flex flex-wrap items-center justify-between px-2.5 py-1.5 bg-[#080d18] border-b border-slate-800 text-[10px] font-mono gap-1">
             <div class="flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="font-bold text-slate-200">CONSOLA EN VIVO</span>
+              <span class="font-bold text-slate-200">LIVE CONSOLE</span>
               <span class="text-slate-600">|</span>
               <select id="console-container-select" onchange="switchIntegratedConsole(this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-cyan-300 font-mono text-[10px] focus:outline-none focus:border-cyan-500">
-                <option value="">Seleccionar Contenedor para Logs...</option>
+                <option value="">Select Container for Logs...</option>
               </select>
             </div>
 
             <div class="flex items-center gap-1.5">
-              <button onclick="toggleConsoleAutoScroll()" id="btn-autoscroll" class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 hover:text-white border border-slate-700 text-[9px] flex items-center gap-1" title="Auto-scroll hacia el final">
+              <button onclick="toggleConsoleAutoScroll()" id="btn-autoscroll" class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 hover:text-white border border-slate-700 text-[9px] flex items-center gap-1" title="Auto-scroll to bottom">
                 <span id="dot-autoscroll" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Auto-scroll
               </button>
-              <button onclick="copyIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Copiar logs al portapapeles">
-                Copiar
+              <button onclick="copyIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Copy logs to clipboard">
+                Copy
               </button>
-              <button onclick="clearIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Limpiar pantalla de consola">
-                Limpiar
+              <button onclick="clearIntegratedLogs()" class="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-[9px] transition" title="Clear console screen">
+                Clear
               </button>
-              <button onclick="toggleIntegratedConsole()" id="btn-toggle-console" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-600 text-[9px] font-semibold transition" title="Minimizar / Expandir consola">
-                Mostrar Consola ▲
+              <button onclick="toggleIntegratedConsole()" id="btn-toggle-console" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-600 text-[9px] font-semibold transition" title="Toggle console view">
+                Show Console ▲
               </button>
             </div>
           </div>
 
           <!-- Console Terminal Body -->
           <div id="integrated-console-body" class="p-2.5 font-mono text-[10px] leading-relaxed text-emerald-400/90 h-36 overflow-y-auto bg-[#02050a] selection:bg-cyan-900 whitespace-pre-wrap select-text hidden">
-            Esperando selección de contenedor... Haz clic en [LOGS] o elige uno en el menú para ver su actividad en vivo.
+            Waiting for container selection... Click [LOGS] or choose one from the menu to see its live activity.
           </div>
         </div>
 
@@ -586,9 +586,9 @@
             <div>Last Audit: <span id="footer-audit" class="text-slate-300">--:--:-- UTC</span></div>
           </div>
           <div class="flex flex-col gap-0.5 sm:text-right">
-            <div class="text-slate-200 font-bold uppercase tracking-wider text-[9px] text-cyan-400">ALMACENAMIENTO DEL SISTEMA</div>
-            <div>Espacio Usado: <span id="footer-disk-used" class="text-cyan-400 font-bold">0.0 GB</span> / <span id="footer-disk-total" class="text-slate-300">0.0 GB</span></div>
-            <div>Espacio Libre: <span id="footer-disk-free" class="text-emerald-400 font-bold">0.0 GB</span></div>
+            <div class="text-slate-200 font-bold uppercase tracking-wider text-[9px] text-cyan-400">SYSTEM STORAGE</div>
+            <div>Used Space: <span id="footer-disk-used" class="text-cyan-400 font-bold">0.0 GB</span> / <span id="footer-disk-total" class="text-slate-300">0.0 GB</span></div>
+            <div>Free Space: <span id="footer-disk-free" class="text-emerald-400 font-bold">0.0 GB</span></div>
           </div>
         </div>
 
@@ -602,12 +602,12 @@
     <footer class="flex items-center justify-between px-3 py-1.5 bg-[#0c121e]/90 border border-slate-800/80 rounded-lg text-[11px] font-mono text-slate-400">
       <div class="flex items-center gap-2">
         <span id="footer-conn-dot" class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] pulse-dot"></span>
-        <span>Conectado a <span id="footer-hostname" class="text-slate-200 font-semibold">ubuntu-server-pro</span> vía WebSocket</span>
+        <span>Connected to <span id="footer-hostname" class="text-slate-200 font-semibold">ubuntu-server-pro</span> via WebSocket</span>
       </div>
 
       <div class="flex items-center gap-3">
-        <span class="hidden sm:inline text-slate-500">Latencia: &lt;5ms</span>
-        <div class="flex items-center gap-1 cursor-pointer hover:text-cyan-400 transition" onclick="triggerManualRefresh()" title="Refrescar ahora">
+        <span class="hidden sm:inline text-slate-500">Latency: &lt;5ms</span>
+        <div class="flex items-center gap-1 cursor-pointer hover:text-cyan-400 transition" onclick="triggerManualRefresh()" title="Refresh now">
           <span>Refresh: 1s (Live)</span>
           <svg id="refresh-icon" class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </div>
@@ -617,13 +617,13 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: ALERTAS CRÍTICAS Y ADVERTENCIAS                                     -->
+  <!-- MODAL: OPERATIONAL ALERTS & WARNINGS                                      -->
   <!-- ========================================================================= -->
   <dialog id="modal-alerts" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/70 max-w-xl w-full">
     <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
       <div class="flex items-center gap-2">
         <span class="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
-        <h3 class="font-mono font-bold text-sm text-slate-100">CENTRO DE ALERTAS OPERACIONALES</h3>
+        <h3 class="font-mono font-bold text-sm text-slate-100">OPERATIONAL ALERTS CENTER</h3>
       </div>
       <button onclick="closeModal('modal-alerts')" class="text-slate-400 hover:text-white p-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -632,17 +632,17 @@
     
     <div class="p-4 max-h-96 overflow-y-auto flex flex-col gap-2" id="alerts-modal-content">
       <!-- Alerts populated via JS -->
-      <div class="text-slate-500 text-center py-6">No hay alertas activas en este momento.</div>
+      <div class="text-slate-500 text-center py-6">No active alerts at this time.</div>
     </div>
 
     <div class="flex items-center justify-between px-4 py-2.5 border-t border-slate-800 bg-slate-900/50 text-xs font-mono">
-      <span class="text-slate-400">Inspección automática en tiempo real</span>
-      <button onclick="closeModal('modal-alerts')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+      <span class="text-slate-400">Automatic real-time inspection</span>
+      <button onclick="closeModal('modal-alerts')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Close</button>
     </div>
   </dialog>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: LOGS EN TIEMPO REAL DEL CONTENEDOR (DOZZLE EXPERIENCE)             -->
+  <!-- MODAL: REAL-TIME CONTAINER LOGS (DOZZLE EXPERIENCE)                     -->
   <!-- ========================================================================= -->
   <dialog id="modal-logs" class="rounded-xl bg-[#090e17] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/80 max-w-3xl w-full">
     <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-800 bg-slate-900/90">
@@ -651,10 +651,10 @@
         <span id="modal-logs-title" class="font-mono font-bold text-xs text-white">container-name</span>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="refreshCurrentLogs()" title="Recargar logs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+        <button onclick="refreshCurrentLogs()" title="Reload logs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </button>
-        <button onclick="copyCurrentLogs()" title="Copiar logs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+        <button onclick="copyCurrentLogs()" title="Copy logs" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         </button>
         <button onclick="closeModal('modal-logs')" class="text-slate-400 hover:text-white p-1">
@@ -664,25 +664,25 @@
     </div>
     
     <div class="p-3 bg-black/90 font-mono text-[11px] text-slate-300 max-h-[420px] overflow-y-auto whitespace-pre-wrap selection:bg-cyan-600/40" id="modal-logs-body">
-      Cargando registros...
+      Loading logs...
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-t border-slate-800 bg-slate-900/80 text-xs font-mono">
       <div class="flex items-center gap-1.5">
-        <span class="text-slate-400 text-[11px]">Acciones:</span>
-        <button onclick="actionFromModalLogs('start')" title="Iniciar contenedor" class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 hover:bg-emerald-900 text-emerald-300 transition text-[10px] font-bold">
-          ▶ Iniciar
+        <span class="text-slate-400 text-[11px]">Actions:</span>
+        <button onclick="actionFromModalLogs('start')" title="Start container" class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 hover:bg-emerald-900 text-emerald-300 transition text-[10px] font-bold">
+          ▶ Start
         </button>
-        <button onclick="actionFromModalLogs('restart')" title="Reiniciar contenedor" class="px-2 py-0.5 rounded bg-slate-900 border border-amber-500 hover:bg-amber-950 text-amber-300 transition text-[10px] font-bold">
-          🔄 Reiniciar
+        <button onclick="actionFromModalLogs('restart')" title="Restart container" class="px-2 py-0.5 rounded bg-slate-900 border border-amber-500 hover:bg-amber-950 text-amber-300 transition text-[10px] font-bold">
+          🔄 Restart
         </button>
-        <button onclick="actionFromModalLogs('stop')" title="Apagar contenedor" class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 hover:bg-rose-900 text-rose-300 transition text-[10px] font-bold">
-          ⏹ Apagar
+        <button onclick="actionFromModalLogs('stop')" title="Stop container" class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 hover:bg-rose-900 text-rose-300 transition text-[10px] font-bold">
+          ⏹ Stop
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-slate-500 text-[10px] hidden sm:inline">Últimas 120 líneas</span>
-        <button onclick="closeModal('modal-logs')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+        <span class="text-slate-500 text-[10px] hidden sm:inline">Last 120 lines</span>
+        <button onclick="closeModal('modal-logs')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Close</button>
       </div>
     </div>
   </dialog>
@@ -694,7 +694,7 @@
     <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
       <div class="flex items-center gap-2">
         <span class="text-cyan-400">🌐</span>
-        <h3 class="font-mono font-bold text-sm text-slate-100">MAPA DE SERVICIOS Y ACCESO RÁPIDO</h3>
+        <h3 class="font-mono font-bold text-sm text-slate-100">SERVICE MAP & QUICK ACCESS</h3>
       </div>
       <button onclick="closeModal('modal-services')" class="text-slate-400 hover:text-white p-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -703,23 +703,23 @@
     
     <div class="p-4 max-h-[400px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2" id="service-map-grid">
       <!-- Populated via JS -->
-      <div class="text-slate-500 text-center py-6 col-span-2 font-mono">Escaneando servicios de red...</div>
+      <div class="text-slate-500 text-center py-6 col-span-2 font-mono">Scanning network services...</div>
     </div>
 
     <div class="flex items-center justify-between px-4 py-2.5 border-t border-slate-800 bg-slate-900/50 text-xs font-mono">
-      <span class="text-slate-400">Haz clic en cualquier puerto para abrirlo en una nueva pestaña</span>
-      <button onclick="closeModal('modal-services')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cerrar</button>
+      <span class="text-slate-400">Click any port to open it in a new tab</span>
+      <button onclick="closeModal('modal-services')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Close</button>
     </div>
   </dialog>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: ACTUALIZACIONES Y ESTADO DE GITHUB                                 -->
+  <!-- MODAL: UPDATES & GITHUB STATUS                                          -->
   <!-- ========================================================================= -->
   <dialog id="modal-updates" class="rounded-xl bg-[#0d1424] border border-slate-700 text-slate-200 p-0 shadow-2xl backdrop:bg-black/75 max-w-xl w-full">
     <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
       <div class="flex items-center gap-2">
         <span class="h-2 w-2 rounded-full bg-cyan-400 pulse-dot"></span>
-        <h3 class="font-mono font-bold text-sm text-slate-100">SISTEMA DE ACTUALIZACIONES Y PROGRAMACIÓN</h3>
+        <h3 class="font-mono font-bold text-sm text-slate-100">UPDATES & SCHEDULING SYSTEM</h3>
       </div>
       <button onclick="closeModal('modal-updates')" class="text-slate-400 hover:text-white p-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -729,112 +729,112 @@
     <div class="p-4 flex flex-col gap-3 font-mono text-xs max-h-[80vh] overflow-y-auto">
       <div class="bg-slate-900/90 border border-slate-800 rounded p-3 flex flex-col gap-1.5">
         <div class="flex justify-between">
-          <span class="text-slate-400">Versión Local:</span>
-          <span id="update-modal-local" class="text-slate-200 font-bold">Cargando...</span>
+          <span class="text-slate-400">Local Version:</span>
+          <span id="update-modal-local" class="text-slate-200 font-bold">Loading...</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-slate-400">Último Commit Remoto:</span>
-          <span id="update-modal-remote" class="text-cyan-400 font-bold">Comprobando...</span>
+          <span class="text-slate-400">Latest Remote Commit:</span>
+          <span id="update-modal-remote" class="text-cyan-400 font-bold">Checking...</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-slate-400">Estado:</span>
-          <span id="update-modal-status" class="text-emerald-400 font-bold">Verificando...</span>
+          <span class="text-slate-400">Status:</span>
+          <span id="update-modal-status" class="text-emerald-400 font-bold">Verifying...</span>
         </div>
       </div>
 
-      <!-- Botones de Acción de Actualización Inmediata -->
+      <!-- Immediate Update Action Buttons -->
       <div class="flex flex-col gap-2">
         <button id="btn-apply-update" onclick="applyGitHubUpdate()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold font-mono text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-          <span id="btn-apply-update-text">Actualizar ahora directo desde GitHub 🚀</span>
+          <span id="btn-apply-update-text">Update now directly from GitHub 🚀</span>
         </button>
 
         <a href="https://github.com/Dantenephilim/Dashboard" target="_blank" rel="noopener noreferrer" class="w-full py-1.5 px-3 rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-mono text-[11px] flex items-center justify-center gap-1.5 transition">
           <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span>Ver cambios en repositorio de GitHub ↗</span>
+          <span>View changes on GitHub repository ↗</span>
         </a>
       </div>
 
-      <!-- Estado de progreso de actualización -->
+      <!-- Update Progress Status -->
       <div id="update-progress-box" class="hidden flex flex-col gap-1.5 p-3 rounded bg-cyan-950/40 border border-cyan-500/40 text-cyan-300">
         <div class="flex items-center justify-between font-bold">
           <span class="flex items-center gap-2">
             <span class="animate-spin text-sm">🔄</span>
-            <span id="update-progress-title">Actualizando sistema...</span>
+            <span id="update-progress-title">Updating system...</span>
           </span>
           <span id="update-countdown" class="font-mono text-xs">18s</span>
         </div>
-        <p id="update-progress-msg" class="text-[10px] text-slate-300">Descargando últimos cambios desde GitHub y reconstruyendo contenedor...</p>
+        <p id="update-progress-msg" class="text-[10px] text-slate-300">Downloading latest changes from GitHub and rebuilding container...</p>
         <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden mt-1">
           <div id="update-progress-bar" class="bg-cyan-400 h-full transition-all duration-1000" style="width: 10%;"></div>
         </div>
       </div>
 
-      <!-- SECCIÓN: PROGRAMACIÓN DE ACTUALIZACIONES AUTOMÁTICAS -->
+      <!-- SECTION: SCHEDULE AUTOMATIC UPDATES -->
       <div class="border-t border-slate-800 pt-3 mt-1 flex flex-col gap-2.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5">
             <span class="text-cyan-400 text-sm">⏰</span>
-            <span class="font-bold text-slate-100 uppercase tracking-wide text-[11px]">PROGRAMAR ACTUALIZACIONES AUTOMÁTICAS</span>
+            <span class="font-bold text-slate-100 uppercase tracking-wide text-[11px]">SCHEDULE AUTOMATIC UPDATES</span>
           </div>
           <!-- Toggle Switch -->
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="autoupdate-toggle" class="sr-only peer" onchange="toggleAutoUpdateEnabled()">
             <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
-            <span id="autoupdate-toggle-label" class="ml-2 text-[10px] font-mono font-semibold text-slate-400">Inactivo</span>
+            <span id="autoupdate-toggle-label" class="ml-2 text-[10px] font-mono font-semibold text-slate-400">Disabled</span>
           </label>
         </div>
 
         <div id="autoupdate-form-box" class="bg-[#090f1a] border border-slate-800 rounded-lg p-3 flex flex-col gap-2.5">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <!-- Hora de Ejecución -->
+            <!-- Execution Time -->
             <div class="flex flex-col gap-1">
-              <label class="text-[10px] text-slate-400 font-semibold" for="autoupdate-time">Hora de Ejecución (HH:MM):</label>
+              <label class="text-[10px] text-slate-400 font-semibold" for="autoupdate-time">Execution Time (HH:MM):</label>
               <input type="time" id="autoupdate-time" value="04:00" class="bg-slate-900 border border-slate-700 text-slate-200 px-2 py-1.5 rounded font-mono text-xs focus:border-cyan-500 outline-none">
             </div>
 
-            <!-- Frecuencia -->
+            <!-- Frequency -->
             <div class="flex flex-col gap-1">
-              <label class="text-[10px] text-slate-400 font-semibold" for="autoupdate-freq">Frecuencia:</label>
+              <label class="text-[10px] text-slate-400 font-semibold" for="autoupdate-freq">Frequency:</label>
               <select id="autoupdate-freq" class="bg-slate-900 border border-slate-700 text-slate-200 px-2 py-1.5 rounded font-mono text-xs focus:border-cyan-500 outline-none">
-                <option value="daily">Diaria (Todos los días)</option>
-                <option value="weekly">Semanal (Cada Domingo)</option>
-                <option value="12h">Cada 12 Horas</option>
+                <option value="daily">Daily (Every day)</option>
+                <option value="weekly">Weekly (Every Sunday)</option>
+                <option value="12h">Every 12 Hours</option>
               </select>
             </div>
           </div>
 
-          <!-- Checkbox Condición GitHub -->
+          <!-- GitHub Condition Checkbox -->
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="autoupdate-only-new" checked class="w-3.5 h-3.5 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0">
-            <span class="text-[10px] text-slate-300">Actualizar solo cuando haya un nuevo commit en GitHub (Recomendado)</span>
+            <span class="text-[10px] text-slate-300">Update only when a new commit is available on GitHub (Recommended)</span>
           </label>
 
-          <!-- Tarjeta de Estado y Próxima Ejecución -->
+          <!-- Status and Next Execution Card -->
           <div class="bg-black/50 border border-slate-800/80 rounded p-2 flex flex-col gap-1 text-[10px]">
             <div class="flex justify-between">
-              <span class="text-slate-400">Próxima actualización:</span>
-              <span id="autoupdate-next-display" class="text-cyan-300 font-bold">Cargando...</span>
+              <span class="text-slate-400">Next update:</span>
+              <span id="autoupdate-next-display" class="text-cyan-300 font-bold">Loading...</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-slate-400">Último estado:</span>
-              <span id="autoupdate-last-status" class="text-slate-300 truncate max-w-[260px]">Sin ejecuciones previas</span>
+              <span class="text-slate-400">Last status:</span>
+              <span id="autoupdate-last-status" class="text-slate-300 truncate max-w-[260px]">No previous executions</span>
             </div>
           </div>
 
-          <!-- Botón Guardar -->
+          <!-- Save Button -->
           <button onclick="saveAutoUpdateSchedule()" class="w-full py-2 px-3 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold font-mono text-[11px] flex items-center justify-center gap-1.5 shadow-md shadow-emerald-900/30 transition">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            Guardar Configuración de Actualización
+            Save Update Settings
           </button>
         </div>
 
-        <!-- Cron nativo para el host Ubuntu -->
+        <!-- Native Cron for Ubuntu Host -->
         <div class="flex flex-col gap-1 mt-1">
-          <span class="text-[10px] text-slate-400">O configura una tarea Cron nativa en tu servidor Ubuntu:</span>
+          <span class="text-[10px] text-slate-400">Or configure a native Cron job on your Ubuntu server:</span>
           <div class="bg-black/80 border border-slate-800 rounded p-2 flex items-center justify-between">
             <code id="cmd-cron" class="text-amber-300 select-all font-mono text-[10px] truncate mr-2">0 4 * * * root cd ~/Dashboard && bash update.sh >> /var/log/dashboard-autoupdate.log 2>&1</code>
-            <button onclick="copyCronCommand()" title="Copiar cron" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex-shrink-0">
+            <button onclick="copyCronCommand()" title="Copy cron" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex-shrink-0">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             </button>
           </div>
@@ -842,19 +842,19 @@
       </div>
 
       <div class="text-[11px] text-slate-300 mt-1">
-        O actualiza manualmente en tu terminal de Ubuntu:
+        Or update manually in your Ubuntu terminal:
       </div>
 
       <div class="bg-black/80 border border-slate-700/80 rounded p-2.5 flex items-center justify-between">
         <code id="cmd-update" class="text-emerald-400 select-all font-mono text-[11px]">cd ~/Dashboard && sudo bash update.sh</code>
-        <button onclick="copyUpdateCommand()" title="Copiar comando" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+        <button onclick="copyUpdateCommand()" title="Copy command" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
         </button>
       </div>
     </div>
 
     <div class="flex items-center justify-end px-4 py-2.5 border-t border-slate-800 bg-slate-900/50 text-xs">
-      <button onclick="closeModal('modal-updates')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono transition">Entendido</button>
+      <button onclick="closeModal('modal-updates')" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono transition">Got it</button>
     </div>
   </dialog>
 
@@ -881,7 +881,7 @@
     function generateLiveSparklineSvg(containerId, isRunning, cpuVal) {
       if (!isRunning) {
         return `
-          <div class="w-14 h-4 flex items-center justify-center opacity-40" title="Contenedor detenido">
+          <div class="w-14 h-4 flex items-center justify-center opacity-40" title="Container stopped">
             <svg class="w-14 h-4" viewBox="0 0 52 16" fill="none">
               <line x1="2" y1="8" x2="50" y2="8" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3 3" />
             </svg>
@@ -896,13 +896,13 @@
 
       return `
         <div class="flex items-center gap-1.5" id="sparkline-wrapper-${containerId}">
-          <div class="sparkline-track w-14 h-4 overflow-hidden relative flex items-center" title="Actividad en tiempo real (${cpuVal}% CPU)">
+          <div class="sparkline-track w-14 h-4 overflow-hidden relative flex items-center" title="Real-time activity (${cpuVal}% CPU)">
             <svg id="wave-svg-${containerId}" class="sparkline-wave-flow ${speedClass}" viewBox="0 0 144 16" fill="none" preserveAspectRatio="none">
               <path id="wave-path-${containerId}" d="M0,8 C8,3 14,3 20,13 C25,14 30,1 36,2 C40,3 44,8 48,8 C56,3 62,3 68,13 C73,14 78,1 84,2 C88,3 92,8 96,8 C104,3 110,3 116,13 C121,14 126,1 132,2 C136,3 140,8 144,8" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <div class="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-l from-[#0a0f19] to-transparent pointer-events-none"></div>
           </div>
-          <span id="spark-dot-${containerId}" class="relative flex h-1.5 w-1.5 flex-shrink-0" title="Activo">
+          <span id="spark-dot-${containerId}" class="relative flex h-1.5 w-1.5 flex-shrink-0" title="Active">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotPingClass} opacity-75"></span>
             <span class="relative inline-flex rounded-full h-1.5 w-1.5 ${dotColorClass}"></span>
           </span>
@@ -1336,26 +1336,26 @@
       const host = window.location.hostname || 'localhost';
       const srv = services || (metrics && metrics.system_services) || (currentMetrics && currentMetrics.system_services) || {};
 
-      const ap = srv.apache || { name: 'Apache HTTP Server', icon: '🪶', status: 'CAÍDO', port: 80, running: false, description: 'Servicio Inactivo (Puerto 80/443)' };
-      const ns = srv.nessus || { name: 'Tenable Nessus Scanner', icon: '🛡️', status: 'CAÍDO', port: 8834, running: false, description: 'Servicio Inactivo (Puerto 8834)' };
+      const ap = srv.apache || { name: 'Apache HTTP Server', icon: '🪶', status: 'DOWN', port: 80, running: false, description: 'Service Offline (Port 80/443)' };
+      const ns = srv.nessus || { name: 'Tenable Nessus Scanner', icon: '🛡️', status: 'DOWN', port: 8834, running: false, description: 'Service Offline (Port 8834)' };
 
-      const apRunning = Boolean(ap.running || (ap.status && ap.status.toUpperCase() === 'LEVANTADO') || (ap.status && ap.status.toUpperCase() === 'RUNNING'));
+      const apRunning = Boolean(ap.running || (ap.status && ['UP', 'LEVANTADO', 'RUNNING'].includes(ap.status.toUpperCase())));
       const apPort = ap.port || 80;
       const apUrl = `http://${host}:${apPort}`;
 
-      const nsRunning = Boolean(ns.running || (ns.status && ns.status.toUpperCase() === 'LEVANTADO') || (ns.status && ns.status.toUpperCase() === 'RUNNING'));
+      const nsRunning = Boolean(ns.running || (ns.status && ['UP', 'LEVANTADO', 'RUNNING'].includes(ns.status.toUpperCase())));
       const nsPort = ns.port || 8834;
       const nsUrl = `https://${host}:${nsPort}`;
 
       // Update header live chips
       const hApStatus = document.getElementById('header-apache-status');
       if (hApStatus) {
-        hApStatus.textContent = apRunning ? 'LEVANTADO' : 'CAÍDO';
+        hApStatus.textContent = apRunning ? 'UP' : 'DOWN';
         hApStatus.className = apRunning ? 'font-black text-emerald-400' : 'font-black text-rose-400';
       }
       const hNsStatus = document.getElementById('header-nessus-status');
       if (hNsStatus) {
-        hNsStatus.textContent = nsRunning ? 'LEVANTADO' : 'CAÍDO';
+        hNsStatus.textContent = nsRunning ? 'UP' : 'DOWN';
         hNsStatus.className = nsRunning ? 'font-black text-emerald-400' : 'font-black text-rose-400';
       }
 
@@ -1363,12 +1363,12 @@
       const nsPidsText = (ns.pids && ns.pids.length > 0) ? ` • PID: ${ns.pids.slice(0, 3).join(', ')}` : (ns.pid ? ` • PID: ${ns.pid}` : '');
 
       const apStatusBadge = apRunning 
-        ? `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.7)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
-        : `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
+        ? `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.7)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>UP</span>`
+        : `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>DOWN</span>`;
 
       const nsStatusBadge = nsRunning 
-        ? `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.7)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>LEVANTADO</span>`
-        : `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>CAÍDO</span>`;
+        ? `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-emerald-500 text-slate-950 shadow-[0_0_10px_rgba(16,185,129,0.7)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping inline-block"></span>UP</span>`
+        : `<span class="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-rose-600 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>DOWN</span>`;
 
       cardsContainer.innerHTML = `
         <!-- Apache Ribbon Card -->
@@ -1377,15 +1377,15 @@
             <span class="text-lg flex-shrink-0">🪶</span>
             <span class="font-bold text-slate-100 text-xs truncate">Apache</span>
             ${apStatusBadge}
-            <span class="text-[10px] ${apRunning ? 'text-emerald-300' : 'text-slate-400'} font-mono truncate hidden sm:inline">${apRunning ? `Puerto ${apPort}${apPidsText}` : `Puerto ${apPort}`}</span>
+            <span class="text-[10px] ${apRunning ? 'text-emerald-300' : 'text-slate-400'} font-mono truncate hidden sm:inline">${apRunning ? `Port ${apPort}${apPidsText}` : `Port ${apPort}`}</span>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0 ml-1">
             ${apRunning ? `
-              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[9px] font-black transition flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Abrir Apache en el navegador">
-                Abrir Web ↗
+              <a href="${apUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[9px] font-black transition flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Open Apache in browser">
+                Open Web ↗
               </a>
             ` : `
-              <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto ${apPort}</span>
+              <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Port ${apPort}</span>
             `}
           </div>
         </div>
@@ -1396,15 +1396,15 @@
             <span class="text-lg flex-shrink-0">🛡️</span>
             <span class="font-bold text-slate-100 text-xs truncate">Nessus</span>
             ${nsStatusBadge}
-            <span class="text-[10px] ${nsRunning ? 'text-emerald-300' : 'text-slate-400'} font-mono truncate hidden sm:inline">${nsRunning ? `Puerto ${nsPort}${nsPidsText}` : `Puerto ${nsPort}`}</span>
+            <span class="text-[10px] ${nsRunning ? 'text-emerald-300' : 'text-slate-400'} font-mono truncate hidden sm:inline">${nsRunning ? `Port ${nsPort}${nsPidsText}` : `Port ${nsPort}`}</span>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0 ml-1">
             ${nsRunning ? `
-              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[9px] font-black transition flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Abrir consola web de Nessus">
-                Abrir Nessus ↗
+              <a href="${nsUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[9px] font-black transition flex items-center gap-1 shadow-[0_0_10px_rgba(16,185,129,0.5)]" title="Open Nessus web console">
+                Open Nessus ↗
               </a>
             ` : `
-              <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Puerto ${nsPort}</span>
+              <span class="px-2 py-0.5 rounded text-[9px] font-mono text-rose-300 bg-rose-950/80 border border-rose-700/60 font-bold">Port ${nsPort}</span>
             `}
           </div>
         </div>
@@ -1486,8 +1486,8 @@
       const proto = isHttps ? 'https' : 'http';
       const url = `${proto}://${host}:${pNum}`;
 
-      const primaryBadge = pNum ? `
-        <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/90 border border-cyan-500/70 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[9px] font-bold whitespace-nowrap shadow-sm" title="Abrir ${url}">
+        const primaryBadge = pNum ? `
+        <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/90 border border-cyan-500/70 text-cyan-300 hover:bg-cyan-900 hover:text-white transition font-mono text-[9px] font-bold whitespace-nowrap shadow-sm" title="Open ${url}">
           ${pNum} ↗
         </a>
       ` : `<span class="text-slate-500 font-mono text-[9px] px-1 py-0.5 bg-slate-900 rounded whitespace-nowrap">${primary.internal || '--'}</span>`;
@@ -1498,7 +1498,7 @@
 
       const remainingCount = cleanPorts.length - 1;
       const moreBtn = `
-        <button type="button" onclick="toggleContainerDrawer('${c.id}', event)" class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-cyan-300 border border-slate-700 font-mono text-[8px] font-bold transition shadow-sm whitespace-nowrap cursor-pointer" title="Ver ${remainingCount} puertos más en detalles desplegables">
+        <button type="button" onclick="toggleContainerDrawer('${c.id}', event)" class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-cyan-300 border border-slate-700 font-mono text-[8px] font-bold transition shadow-sm whitespace-nowrap cursor-pointer" title="View ${remainingCount} more ports in details">
           <span>+${remainingCount}</span>
           <svg class="w-2 h-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
@@ -1516,7 +1516,7 @@
       const demoBanner = document.getElementById('demo-banner');
 
       if (!docker) {
-        containerListEl.innerHTML = '<div class="text-center py-6 text-slate-500 font-mono">No se detectó Docker daemon.</div>';
+        containerListEl.innerHTML = '<div class="text-center py-6 text-slate-500 font-mono">Docker daemon not detected.</div>';
         lastContainerFingerprint = '';
         return;
       }
@@ -1529,7 +1529,7 @@
 
       const host = window.location.hostname || 'localhost';
 
-      // 1. Filtrar y renderizar exclusivamente contenedores Docker
+      // 1. Filter and render Docker containers exclusively
       const query = (document.getElementById('search-container').value || '').toLowerCase().trim();
       const dockerContainers = docker.containers || [];
       populateConsoleContainerSelect(dockerContainers);
@@ -1550,19 +1550,19 @@
       }
 
       const runningDocker = docker.running !== undefined ? docker.running : dockerContainers.filter(c => (c.status || '').toLowerCase() === 'running').length;
-      countBadge.textContent = `${runningDocker} / ${dockerContainers.length} Contenedores Activos`;
+      countBadge.textContent = `${runningDocker} / ${dockerContainers.length} Active Containers`;
 
       if (list.length === 0) {
-        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay contenedores Docker que coincidan con el filtro.</div>';
+        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No Docker containers match the filter.</div>';
         lastContainerFingerprint = '';
         return;
       }
 
-      // Fingerprint para evitar reconstrucciones innecesarias del DOM
+      // Fingerprint to prevent unnecessary DOM re-renders
       const currentFingerprint = `${currentFilter}:${query}:` + list.map(c => `${c.id}:${c.status}:${c.health}:${c.ports ? c.ports.map(p=>p.link_port||p.internal).join(',') : ''}`).join('|');
 
       if (currentFingerprint === lastContainerFingerprint && containerListEl.children.length === list.length) {
-        // Actualización in-place para animaciones a 60 FPS
+        // In-place update for 60 FPS animations
         list.forEach(c => {
           const isRunning = (c.status || '').toLowerCase() === 'running';
           const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
@@ -1627,7 +1627,7 @@
           <div class="container-entry bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/50 transition overflow-hidden shadow-sm ${isOpen ? 'col-span-1 md:col-span-2 ring-1 ring-cyan-500/40' : 'col-span-1'}" id="container-card-${c.id}">
             
             <!-- Compact Uniform Main Row: Strictly 34px / h-[34px] -->
-            <div class="flex items-center justify-between px-2 h-[34px] min-h-[34px] max-h-[34px] cursor-pointer select-none overflow-hidden gap-1.5" onclick="toggleContainerDrawer('${c.id}', event)" title="Haz clic para ver o colapsar detalles">
+            <div class="flex items-center justify-between px-2 h-[34px] min-h-[34px] max-h-[34px] cursor-pointer select-none overflow-hidden gap-1.5" onclick="toggleContainerDrawer('${c.id}', event)" title="Click to view or collapse details">
               
               <!-- Col 1: Icon & Name -->
               <div class="flex items-center gap-1.5 overflow-hidden min-w-0 flex-1">
@@ -1644,7 +1644,7 @@
               <!-- Col 3: CPU & Chevron -->
               <div class="flex items-center gap-1 font-mono text-[10px] flex-shrink-0">
                 <span class="text-cyan-400 font-bold" id="cpu-val-${c.id}">${cpuVal}%</span>
-                <button type="button" class="p-0.5 text-slate-400 hover:text-cyan-400 transition-transform ${isOpen ? 'rotate-180' : ''}" id="drawer-chevron-${c.id}" title="Desplegar detalles">
+                <button type="button" class="p-0.5 text-slate-400 hover:text-cyan-400 transition-transform ${isOpen ? 'rotate-180' : ''}" id="drawer-chevron-${c.id}" title="Toggle details">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
               </div>
@@ -1658,31 +1658,31 @@
                 <!-- Box 1: Runtime Information -->
                 <div class="flex flex-col gap-1 bg-[#090e19] border border-slate-800/80 rounded p-2">
                   <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[9px]">
-                    <span class="flex items-center gap-1"><span>📦</span> INFORMACIÓN DETALLADA</span>
+                    <span class="flex items-center gap-1"><span>📦</span> DETAILED INFORMATION</span>
                     <span class="text-cyan-400 font-mono text-[8px]">DOCKER ENGINE</span>
                   </div>
                   <div class="flex items-center justify-between text-[9px]">
-                    <span class="text-slate-400">ID Contenedor:</span>
+                    <span class="text-slate-400">Container ID:</span>
                     <span class="text-slate-200 select-all font-mono" title="${c.id}">${String(c.id).substring(0, 16)}${String(c.id).length > 16 ? '...' : ''}</span>
                   </div>
                   <div class="flex items-center justify-between text-[9px]">
-                    <span class="text-slate-400">Imagen:</span>
+                    <span class="text-slate-400">Image:</span>
                     <span class="text-cyan-300 truncate max-w-[180px]" title="${c.image}">${c.image}</span>
                   </div>
                   <div class="flex items-center justify-between text-[9px]">
-                    <span class="text-slate-400">Salud:</span>
+                    <span class="text-slate-400">Health:</span>
                     <span class="${c.health === 'healthy' ? 'text-emerald-400 font-bold' : (c.health === 'unhealthy' ? 'text-rose-400 font-bold' : 'text-slate-300')}">
-                      ${c.health || (isRunning ? 'Activo (Healthy)' : 'Inactivo / Detenido')}
+                      ${c.health || (isRunning ? 'Running (Healthy)' : 'Inactive / Stopped')}
                     </span>
                   </div>
                   ${c.ip_address ? `
                     <div class="flex items-center justify-between text-[9px]">
-                      <span class="text-slate-400">IP Docker:</span>
+                      <span class="text-slate-400">Docker IP:</span>
                       <span class="text-slate-200 font-mono">${c.ip_address}</span>
                     </div>
                   ` : ''}
                   <div class="flex items-center justify-between text-[9px]">
-                    <span class="text-slate-400">Consumo:</span>
+                    <span class="text-slate-400">Usage:</span>
                     <span class="text-slate-200 font-mono"><b class="text-cyan-400">${cpuVal}% CPU</b> • <b class="text-emerald-400">${memMb} MB</b></span>
                   </div>
                 </div>
@@ -1690,7 +1690,7 @@
                 <!-- Box 2: All Ports Matrix -->
                 <div class="flex flex-col gap-1 bg-[#090e19] border border-slate-800/80 rounded p-2">
                   <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[9px]">
-                    <span class="flex items-center gap-1"><span>🔌</span> MAPEO DE PUERTOS (${cleanPorts.length})</span>
+                    <span class="flex items-center gap-1"><span>🔌</span> PORT MAPPINGS (${cleanPorts.length})</span>
                     <span class="text-slate-500 text-[8px]">TCP / UDP</span>
                   </div>
                   ${(cleanPorts && cleanPorts.length > 0) ? `
@@ -1708,7 +1708,7 @@
                             </div>
                             ${pNum ? `
                               <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white font-bold text-[8px] transition flex items-center gap-0.5">
-                                Abrir ↗
+                                Open ↗
                               </a>
                             ` : ''}
                           </div>
@@ -1716,7 +1716,7 @@
                       }).join('')}
                     </div>
                   ` : `
-                    <div class="text-slate-500 text-[9px] italic py-2 text-center">No hay puertos de red expuestos</div>
+                    <div class="text-slate-500 text-[9px] italic py-2 text-center">No exposed network ports</div>
                   `}
                 </div>
 
@@ -1724,22 +1724,22 @@
 
               <!-- Actions Toolbar inside drawer -->
               <div class="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-800/80">
-                <span class="text-slate-500 text-[8px] truncate max-w-[140px]">Acciones: ${c.name}</span>
+                <span class="text-slate-500 text-[8px] truncate max-w-[140px]">Actions: ${c.name}</span>
                 <div class="flex items-center gap-1">
                   <button onclick="viewContainerLogs('${c.id}', '${c.name}'); event.stopPropagation();" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[9px] font-bold transition flex items-center gap-1">
                     <svg class="w-2.5 h-2.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Logs
                   </button>
                   <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}'); event.stopPropagation();" class="px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-500/70 hover:bg-amber-900 text-amber-300 text-[9px] font-bold transition">
-                    Reiniciar
+                    Restart
                   </button>
                   ${isRunning ? `
                     <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}'); event.stopPropagation();" class="px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-500/70 hover:bg-rose-900 text-rose-300 text-[9px] font-bold transition">
-                      Detener
+                      Stop
                     </button>
                   ` : `
                     <button onclick="performContainerAction('${c.id}', 'start', '${c.name}'); event.stopPropagation();" class="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/70 hover:bg-emerald-900 text-emerald-300 text-[9px] font-bold transition">
-                      Iniciar
+                      Start
                     </button>
                   `}
                 </div>
@@ -1784,10 +1784,10 @@
     async function viewContainerLogs(containerId, containerName) {
       currentLogsContainerId = containerId;
       document.getElementById('modal-logs-title').textContent = containerName || containerId;
-      document.getElementById('modal-logs-body').textContent = 'Cargando registros en vivo...';
+      document.getElementById('modal-logs-body').textContent = 'Loading live logs...';
       openModal('modal-logs');
 
-      // Sincronizar también con la consola integrada inferior
+      // Also sync with the integrated bottom console
       const select = document.getElementById('console-container-select');
       if (select) select.value = containerId;
       loadIntegratedConsoleLogs(containerId);
@@ -1795,12 +1795,12 @@
       try {
         const resp = await fetch(`/api/containers/${containerId}/logs?tail=120`);
         const data = await resp.json();
-        document.getElementById('modal-logs-body').textContent = data.logs || 'Sin registros.';
+        document.getElementById('modal-logs-body').textContent = data.logs || 'No logs found.';
         // Auto scroll to bottom
         const el = document.getElementById('modal-logs-body');
         el.scrollTop = el.scrollHeight;
       } catch (e) {
-        document.getElementById('modal-logs-body').textContent = `Error al consultar logs: ${e.message}`;
+        document.getElementById('modal-logs-body').textContent = `Error fetching logs: ${e.message}`;
       }
     }
 
@@ -1813,9 +1813,9 @@
     function copyCurrentLogs() {
       const text = document.getElementById('modal-logs-body').textContent;
       navigator.clipboard.writeText(text).then(() => {
-        showToast('✓ Registros copiados al portapapeles', 'success');
+        showToast('✓ Logs copied to clipboard', 'success');
       }).catch(() => {
-        showToast('Registros copiados', 'info');
+        showToast('Logs copied', 'info');
       });
     }
 
@@ -1832,13 +1832,13 @@
       const currentVal = select.value || integratedConsoleContainerId;
       const running = (containers || []).filter(c => (c.status || '').toLowerCase() === 'running');
       
-      let html = '<option value="">Seleccionar Contenedor para Logs...</option>';
+      let html = '<option value="">Select Container for Logs...</option>';
       running.forEach(c => {
         html += `<option value="${c.id}" ${c.id === currentVal ? 'selected' : ''}>${c.name} (${(c.id || '').substring(0, 7)})</option>`;
       });
       select.innerHTML = html;
 
-      // Si no hay ninguno seleccionado, seleccionar automáticamente el primero
+      // If none selected, automatically select the first one
       if (!integratedConsoleContainerId && running.length > 0) {
         select.value = running[0].id;
         switchIntegratedConsole(running[0].id);
@@ -1849,12 +1849,12 @@
       integratedConsoleContainerId = containerId;
       if (!containerId) {
         const body = document.getElementById('integrated-console-body');
-        if (body) body.textContent = 'Selecciona un contenedor en el menú para ver sus registros en vivo.';
+        if (body) body.textContent = 'Select a container from the menu to view live logs.';
         return;
       }
       await loadIntegratedConsoleLogs(containerId);
 
-      // Iniciar sondeo periódico de logs (cada 3 segundos) si no está activo
+      // Start periodic log polling (every 3 seconds) if not active
       if (!integratedConsoleInterval) {
         integratedConsoleInterval = setInterval(() => {
           if (integratedConsoleContainerId && !document.getElementById('integrated-console-body').classList.contains('hidden')) {
@@ -1868,19 +1868,19 @@
       const body = document.getElementById('integrated-console-body');
       if (!body) return;
       if (!isBackground) {
-        body.textContent = `[CONECTANDO] Obteniendo registros en vivo para ${containerId.substring(0, 12)}...`;
+        body.textContent = `[CONNECTING] Fetching live logs for ${containerId.substring(0, 12)}...`;
       }
       try {
         const resp = await fetch(`/api/containers/${containerId}/logs?tail=80`);
         const data = await resp.json();
-        const logsText = data.logs || 'Sin registros recientes reportados por el contenedor.';
+        const logsText = data.logs || 'No recent logs reported by the container.';
         body.textContent = logsText;
         if (integratedConsoleAutoScroll) {
           body.scrollTop = body.scrollHeight;
         }
       } catch (err) {
         if (!isBackground) {
-          body.textContent = `[ERROR] No se pudieron obtener los logs: ${err.message}`;
+          body.textContent = `[ERROR] Failed to fetch logs: ${err.message}`;
         }
       }
     }
@@ -1891,14 +1891,14 @@
       if (!body || !btn) return;
       if (body.classList.contains('hidden')) {
         body.classList.remove('hidden');
-        btn.textContent = 'Ocultar ▼';
+        btn.textContent = 'Hide Console ▼';
         btn.classList.replace('text-amber-300', 'text-cyan-300');
         if (integratedConsoleContainerId) {
           loadIntegratedConsoleLogs(integratedConsoleContainerId);
         }
       } else {
         body.classList.add('hidden');
-        btn.textContent = 'Mostrar Consola ▲';
+        btn.textContent = 'Show Console ▲';
         btn.classList.replace('text-cyan-300', 'text-amber-300');
       }
     }
@@ -1909,33 +1909,33 @@
       if (dot) {
         dot.className = integratedConsoleAutoScroll ? 'w-1.5 h-1.5 rounded-full bg-emerald-400' : 'w-1.5 h-1.5 rounded-full bg-slate-600';
       }
-      showToast(integratedConsoleAutoScroll ? 'Auto-scroll activado' : 'Auto-scroll desactivado', 'info');
+      showToast(integratedConsoleAutoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled', 'info');
     }
 
     function copyIntegratedLogs() {
       const body = document.getElementById('integrated-console-body');
       if (!body) return;
       navigator.clipboard.writeText(body.textContent).then(() => {
-        showToast('✓ Registros de consola copiados', 'success');
+        showToast('✓ Console logs copied', 'success');
       });
     }
 
     function clearIntegratedLogs() {
       const body = document.getElementById('integrated-console-body');
       if (body) {
-        body.textContent = '[CONSOLA LIMPIADA] Esperando nuevos registros...';
+        body.textContent = '[CONSOLE CLEARED] Waiting for new logs...';
       }
     }
 
     async function restartAllContainers() {
       try {
-        showToast('Reiniciando todos los contenedores...', 'info');
+        showToast('Restarting all containers...', 'info');
         const res = await fetch('/api/containers/restart-all', { method: 'POST' });
         const data = await res.json();
-        showToast(data.message || 'Contenedores reiniciados correctamente.', 'success');
+        showToast(data.message || 'All containers restarted successfully.', 'success');
         triggerManualRefresh();
       } catch (e) {
-        showToast(`Error al reiniciar: ${e.message}`, 'error');
+        showToast(`Error restarting: ${e.message}`, 'error');
       }
     }
 
@@ -1961,19 +1961,19 @@
 
     // Individual Container Action (start, stop, restart)
     async function performContainerAction(containerId, action, containerName) {
-      const verb = action === 'start' ? 'iniciar' : action === 'stop' ? 'apagar / detener' : 'reiniciar';
+      const verb = action === 'start' ? 'start' : action === 'stop' ? 'stop' : 'restart';
       try {
-        showToast(`Ejecutando ${verb} en ${containerName || containerId}...`, 'info');
+        showToast(`Executing ${verb} on ${containerName || containerId}...`, 'info');
         const res = await fetch(`/api/containers/${containerId}/${action}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok && data.status !== 'error') {
-          showToast(data.message || `Acción '${action}' completada.`, 'success');
+          showToast(data.message || `Action '${action}' completed.`, 'success');
           triggerManualRefresh();
         } else {
-          showToast(data.message || `Error al ${verb}: verifique permisos en docker.sock`, 'error');
+          showToast(data.message || `Error during ${verb}: check docker.sock permissions`, 'error');
         }
       } catch (err) {
-        showToast(`Error de red al ${verb}: ${err.message}`, 'error');
+        showToast(`Network error during ${verb}: ${err.message}`, 'error');
       }
     }
 
@@ -1997,40 +1997,40 @@
         btn.disabled = true;
         btn.classList.add('opacity-60', 'cursor-not-allowed');
       }
-      if (text) text.textContent = 'Descargando actualización...';
+      if (text) text.textContent = 'Downloading update...';
       if (box) box.classList.remove('hidden');
       if (bar) {
         bar.style.width = '20%';
         bar.className = 'bg-cyan-400 h-full transition-all duration-1000';
       }
       if (countdown) countdown.textContent = '10s';
-      if (msg) msg.textContent = 'Conectando con GitHub y descargando última versión...';
+      if (msg) msg.textContent = 'Connecting to GitHub and downloading latest version...';
 
       try {
         const res = await fetch('/api/updates/apply', { method: 'POST' });
         const data = await res.json();
 
         if (!res.ok || data.status === 'error') {
-          const errText = data.message || `Error del servidor (código HTTP ${res.status})`;
+          const errText = data.message || `Server error (HTTP status ${res.status})`;
           if (msg) msg.textContent = `❌ ${errText}`;
-          if (countdown) countdown.textContent = 'Fallo';
+          if (countdown) countdown.textContent = 'Failed';
           if (bar) {
             bar.style.width = '100%';
             bar.className = 'bg-rose-500 h-full transition-all';
           }
-          showToast(`Error al actualizar: ${errText}`, 'error');
+          showToast(`Update error: ${errText}`, 'error');
           if (btn) {
             btn.disabled = false;
             btn.classList.remove('opacity-60', 'cursor-not-allowed');
           }
-          if (text) text.textContent = 'Reintentar actualización 🚀';
+          if (text) text.textContent = 'Retry update 🚀';
           return;
         }
 
-        // Actualización iniciada y descargada con éxito
+        // Update initiated and downloaded successfully
         if (bar) bar.style.width = '55%';
-        if (msg) msg.textContent = data.message || 'Archivos sincronizados. Reiniciando servidor...';
-        showToast('✓ Actualización aplicada. Reiniciando servidor...', 'success');
+        if (msg) msg.textContent = data.message || 'Files synchronized. Restarting server...';
+        showToast('✓ Update applied. Restarting server...', 'success');
 
         let timeLeft = 10;
         const timer = setInterval(() => {
@@ -2041,7 +2041,7 @@
 
           if (timeLeft <= 0) {
             clearInterval(timer);
-            if (msg) msg.textContent = '¡Listo! Recargando dashboard...';
+            if (msg) msg.textContent = 'Ready! Reloading dashboard...';
             if (bar) bar.style.width = '100%';
             setTimeout(() => {
               window.location.reload();
@@ -2050,25 +2050,25 @@
         }, 1000);
 
       } catch (err) {
-        if (msg) msg.textContent = `❌ Error de red: ${err.message}. En terminal: cd ~/Dashboard && sudo bash update.sh`;
-        if (countdown) countdown.textContent = 'Fallo';
+        if (msg) msg.textContent = `❌ Network error: ${err.message}. In terminal: cd ~/Dashboard && sudo bash update.sh`;
+        if (countdown) countdown.textContent = 'Failed';
         if (bar) {
           bar.style.width = '100%';
           bar.className = 'bg-rose-500 h-full transition-all';
         }
-        showToast(`Fallo de conexión al actualizar: ${err.message}`, 'error');
+        showToast(`Connection error during update: ${err.message}`, 'error');
         if (btn) {
           btn.disabled = false;
           btn.classList.remove('opacity-60', 'cursor-not-allowed');
         }
-        if (text) text.textContent = 'Reintentar actualización 🚀';
+        if (text) text.textContent = 'Retry update 🚀';
       }
     }
 
     function copyUpdateCommand() {
       const cmd = "cd ~/Dashboard && sudo bash update.sh";
       navigator.clipboard.writeText(cmd).then(() => {
-        showToast("Comando copiado: cd ~/Dashboard && sudo bash update.sh", "success");
+        showToast("Command copied: cd ~/Dashboard && sudo bash update.sh", "success");
       });
     }
 
@@ -2086,8 +2086,8 @@
         container.innerHTML = `
           <div class="p-6 text-center text-slate-400 font-mono">
             <span class="text-3xl block mb-2">🟢</span>
-            <b>Todos los sistemas operan dentro de los parámetros normales.</b>
-            <p class="text-[11px] text-slate-500 mt-1">No hay alertas ${filter === 'all' ? '' : filter} activas.</p>
+            <b>All systems operating within normal parameters.</b>
+            <p class="text-[11px] text-slate-500 mt-1">No active ${filter === 'all' ? '' : filter} alerts.</p>
           </div>
         `;
         return;
@@ -2109,7 +2109,7 @@
               <span class="text-[10px] text-slate-500">${a.timestamp || ''}</span>
             </div>
             <p class="text-[11px] text-slate-300">${a.message}</p>
-            <div class="text-[9px] text-slate-500 mt-1">Fuente: <span class="text-cyan-400">${a.source}</span></div>
+            <div class="text-[9px] text-slate-500 mt-1">Source: <span class="text-cyan-400">${a.source}</span></div>
           </div>
         `;
       });
@@ -2121,7 +2121,7 @@
       const services = (currentMetrics && currentMetrics.discovered_services) ? currentMetrics.discovered_services : [];
 
       if (services.length === 0) {
-        grid.innerHTML = '<div class="text-slate-500 col-span-2 text-center py-6 font-mono">No se detectaron servicios web con puertos expuestos.</div>';
+        grid.innerHTML = '<div class="text-slate-500 col-span-2 text-center py-6 font-mono">No web services with exposed ports detected.</div>';
         return;
       }
 
@@ -2170,25 +2170,25 @@
         elRemote.textContent = data.latest_commit || '--';
 
         if (data.update_available) {
-          elStatus.textContent = '¡Nueva versión disponible en GitHub!';
+          elStatus.textContent = 'New version available on GitHub!';
           elStatus.className = 'text-amber-400 font-bold animate-pulse';
-          labelBtn.textContent = 'Actualizar 🚀';
+          labelBtn.textContent = 'Update 🚀';
           dot.className = 'h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping';
         } else {
-          elStatus.textContent = 'Sistema 100% al día';
+          elStatus.textContent = 'System 100% up to date';
           elStatus.className = 'text-emerald-400 font-bold';
           labelBtn.textContent = 'v2.3.0 Sync';
           dot.className = 'h-1.5 w-1.5 rounded-full bg-emerald-400';
         }
       } catch (e) {
-        elStatus.textContent = 'No se pudo conectar a GitHub';
+        elStatus.textContent = 'Could not connect to GitHub';
       }
     }
 
     function copyUpdateCommand() {
       const text = document.getElementById('cmd-update').textContent;
       navigator.clipboard.writeText(text).then(() => {
-        showToast('✓ Comando de actualización copiado al portapapeles', 'success');
+        showToast('✓ Update command copied to clipboard', 'success');
       }).catch(() => {
         showToast('cd ~/Dashboard && sudo bash update.sh', 'info');
       });
@@ -2197,9 +2197,9 @@
     function copyCronCommand() {
       const text = document.getElementById('cmd-cron').textContent;
       navigator.clipboard.writeText(text).then(() => {
-        showToast('✓ Línea crontab copiada al portapapeles', 'success');
+        showToast('✓ Crontab line copied to clipboard', 'success');
       }).catch(() => {
-        showToast('Línea de cron lista para copiar', 'info');
+        showToast('Cron line ready to copy', 'info');
       });
     }
 
@@ -2220,7 +2220,7 @@
 
         if (toggle) toggle.checked = Boolean(data.enabled);
         if (label) {
-          label.textContent = data.enabled ? 'Activo' : 'Inactivo';
+          label.textContent = data.enabled ? 'Active' : 'Disabled';
           label.className = data.enabled ? 'ml-2 text-[10px] font-mono font-bold text-cyan-400' : 'ml-2 text-[10px] font-mono font-semibold text-slate-400';
         }
         if (timeInput && data.time) timeInput.value = data.time;
@@ -2229,7 +2229,7 @@
 
         if (nextDisplay) {
           if (!data.enabled) {
-            nextDisplay.textContent = 'Programación desactivada';
+            nextDisplay.textContent = 'Schedule disabled';
             nextDisplay.className = 'text-slate-500 font-bold';
           } else if (data.next_run) {
             const d = new Date(data.next_run);
@@ -2237,10 +2237,10 @@
             nextDisplay.className = 'text-cyan-300 font-bold';
           }
         }
-        if (lastStatus) lastStatus.textContent = data.last_status || 'Sin ejecuciones previas';
+        if (lastStatus) lastStatus.textContent = data.last_status || 'No previous executions';
         if (cronCode && data.host_cron) cronCode.textContent = data.host_cron;
       } catch (err) {
-        console.warn('Error al cargar programación de actualización:', err);
+        console.warn('Error loading update schedule:', err);
       }
     }
 
@@ -2248,7 +2248,7 @@
       const toggle = document.getElementById('autoupdate-toggle');
       const label = document.getElementById('autoupdate-toggle-label');
       if (toggle && label) {
-        label.textContent = toggle.checked ? 'Activo' : 'Inactivo';
+        label.textContent = toggle.checked ? 'Active' : 'Disabled';
         label.className = toggle.checked ? 'ml-2 text-[10px] font-mono font-bold text-cyan-400' : 'ml-2 text-[10px] font-mono font-semibold text-slate-400';
       }
     }
@@ -2274,13 +2274,13 @@
         });
         const data = await res.json();
         if (res.ok && data.status === 'ok') {
-          showToast('✓ Programación de actualización automática guardada con éxito', 'success');
+          showToast('✓ Automatic update schedule saved successfully', 'success');
           loadAutoUpdateSchedule();
         } else {
-          showToast(data.message || 'Error al guardar la programación', 'error');
+          showToast(data.message || 'Error saving update schedule', 'error');
         }
       } catch (err) {
-        showToast(`Error al guardar: ${err.message}`, 'error');
+        showToast(`Error saving: ${err.message}`, 'error');
       }
     }
 
@@ -2298,7 +2298,7 @@
           const data = await res.json();
           if (data && data.metrics) {
             updateDashboard(data.metrics);
-            // Si WebSocket no está conectado, el punto azul/cian indica que HTTP Polling está funcionando
+            // If WebSocket is not connected, the cyan dot indicates HTTP Polling is working
             if (!ws || ws.readyState !== WebSocket.OPEN) {
               const dot = document.getElementById('footer-conn-dot');
               if (dot) dot.className = 'h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] pulse-dot';
@@ -2332,7 +2332,7 @@
               updateDashboard(payload.metrics);
             }
           } catch (err) {
-            console.error('Error parseando mensaje WS:', err);
+            console.error('Error parsing WS message:', err);
           }
         };
 
@@ -2371,23 +2371,23 @@
         console.warn('Chart.js init warning:', e);
       }
 
-      // 0. Render inicial de tarjetas de servicios del sistema (Apache & Nessus)
+      // 0. Initial render of system service cards (Apache & Nessus)
       renderSystemServicesCards();
 
-      // 1. Carga inmediata HTTP
+      // 1. Immediate HTTP fetch
       fetchMetricsHTTP();
 
-      // 2. Conectar WebSocket para tiempo real
+      // 2. Connect WebSocket for real-time streaming
       connectWebSocket();
 
-      // 3. Fallback continuo cada 1 segundo si WebSocket se desconecta (ultra tiempo real)
+      // 3. Continuous fallback every 1 second if WebSocket disconnects (ultra real-time)
       setInterval(() => {
         if (!ws || ws.readyState !== WebSocket.OPEN) {
           fetchMetricsHTTP();
         }
       }, 1000);
 
-      // 4. Comprobar actualizaciones
+      // 4. Check for updates
       checkUpdates();
     });
   </script>

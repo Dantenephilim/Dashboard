@@ -170,13 +170,13 @@ async def api_container_logs(container_id: str, tail: int = 120):
     """Obtiene los últimos logs de un contenedor."""
     client = get_docker_client()
     if not client:
-        return {"logs": f"[DEMO MODO] Registros en tiempo real para el contenedor '{container_id}':\n[2026-09-12T05:20:00Z] Worker initialized successfully.\n[2026-09-12T05:20:01Z] Listening on 0.0.0.0.\n[2026-09-12T05:20:05Z] Heartbeat check: OK (latency 0.8ms).\n[2026-09-12T05:21:00Z] Servicing incoming requests. No anomalies detected."}
+        return {"logs": f"[DEMO MODE] Real-time logs for container '{container_id}':\n[2026-09-12T05:20:00Z] Worker initialized successfully.\n[2026-09-12T05:20:01Z] Listening on 0.0.0.0.\n[2026-09-12T05:20:05Z] Heartbeat check: OK (latency 0.8ms).\n[2026-09-12T05:21:00Z] Servicing incoming requests. No anomalies detected."}
     try:
         container = client.containers.get(container_id)
         raw_logs = container.logs(tail=tail, timestamps=True)
         return {"logs": raw_logs.decode("utf-8", errors="replace")}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Error al leer logs: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": f"Error reading logs: {str(e)}"})
 
 
 @app.post("/api/containers/{container_id}/start")
@@ -211,7 +211,7 @@ async def api_restart_all_containers():
     """Reinicia todos los contenedores en ejecución."""
     client = get_docker_client()
     if not client:
-        return {"success": True, "message": "[DEMO] Todos los contenedores reiniciados en segundo plano."}
+        return {"success": True, "message": "[DEMO] All containers restarted in the background."}
     try:
         containers = client.containers.list()
         restarted = []
@@ -261,7 +261,7 @@ def check_github_updates() -> dict:
         "current_commit": current_commit,
         "update_available": False,
         "latest_commit": current_commit,
-        "latest_message": "Sistema al día",
+        "latest_message": "System up to date",
         "update_command": "sudo bash update.sh",
         "error": None
     }
@@ -313,7 +313,7 @@ def trigger_system_update() -> dict:
                 subprocess.Popen(["bash", str(update_script)], cwd=str(BASE_DIR.parent))
                 return {
                     "status": "ok",
-                    "message": "Actualización iniciada en el host con update.sh."
+                    "message": "Update initiated on the host using update.sh."
                 }
             except Exception as e:
                 logger.warning(f"No se pudo invocar update.sh en el host ({e}), procediendo con actualización directa...")
@@ -424,7 +424,7 @@ def trigger_system_update() -> dict:
     if not updated:
         return {
             "status": "error",
-            "message": f"No se pudo descargar la actualización ({'; '.join(error_details)}). En tu terminal ejecuta: cd ~/Dashboard && sudo bash update.sh"
+            "message": f"Could not download update ({'; '.join(error_details)}). In your terminal run: cd ~/Dashboard && sudo bash update.sh"
         }
 
     # Guardar version.json con el commit actualizado
@@ -453,7 +453,7 @@ def trigger_system_update() -> dict:
     return {
         "status": "ok",
         "commit": latest_sha,
-        "message": f"¡Actualizado exitosamente al commit {latest_sha}! El dashboard se reiniciará en 2 segundos."
+        "message": f"Successfully updated to commit {latest_sha}! The dashboard will restart in 2 seconds."
     }
 
 
@@ -541,7 +541,7 @@ def load_autoupdate_config() -> dict:
         "frequency": "daily",
         "only_if_new": True,
         "last_run": None,
-        "last_status": "Sin ejecuciones previas registradas",
+        "last_status": "No previous executions recorded",
         "next_run": compute_next_run("04:00", "daily"),
         "host_cron": build_cron_command("04:00", "daily")
     }
@@ -578,13 +578,13 @@ async def auto_update_scheduler_loop():
                                 should_run = bool(up.get("update_available"))
                                 if not should_run:
                                     logger.info("[AutoUpdate] GitHub ya está al día. Omitiendo reconstrucción.")
-                                    cfg["last_status"] = f"Comprobado {now_dt.strftime('%d/%m %H:%M')} (Sistema al día)"
+                                    cfg["last_status"] = f"Checked {now_dt.strftime('%m/%d %H:%M')} (System up to date)"
 
                             if should_run:
                                 logger.info("[AutoUpdate] Aplicando actualización programada...")
                                 await asyncio.to_thread(trigger_system_update)
                                 cfg["last_run"] = now_dt.isoformat()
-                                cfg["last_status"] = f"Actualizado con éxito el {now_dt.strftime('%d/%m/%Y %H:%M')}"
+                                cfg["last_status"] = f"Successfully updated on {now_dt.strftime('%Y-%m-%d %H:%M')}"
 
                             cfg["next_run"] = compute_next_run(cfg.get("time", "04:00"), cfg.get("frequency", "daily"))
                             save_autoupdate_config(cfg)
@@ -625,7 +625,7 @@ async def api_save_update_schedule(request: Request):
         logger.info(f"Programación de actualizaciones actualizada: {cfg['frequency']} a las {cfg['time']} (Activo: {cfg['enabled']})")
         return {
             "status": "ok",
-            "message": "Programación de actualización automática guardada con éxito.",
+            "message": "Automatic update schedule saved successfully.",
             "config": cfg
         }
     except Exception as e:
