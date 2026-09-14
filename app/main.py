@@ -297,6 +297,9 @@ def trigger_system_update() -> dict:
     import os
     import threading
     import time
+    import urllib.request
+    import zipfile
+    import io
     from datetime import datetime
 
     logger.info("Iniciando proceso de actualización desde GitHub...")
@@ -306,82 +309,152 @@ def trigger_system_update() -> dict:
     if not is_in_docker:
         update_script = BASE_DIR.parent / "update.sh"
         if update_script.exists():
-            subprocess.Popen(["bash", str(update_script)], cwd=str(BASE_DIR.parent))
-            return {
-                "status": "ok",
-                "message": "Actualización iniciada en el host con update.sh."
-            }
+            try:
+                subprocess.Popen(["bash", str(update_script)], cwd=str(BASE_DIR.parent))
+                return {
+                    "status": "ok",
+                    "message": "Actualización iniciada en el host con update.sh."
+                }
+            except Exception as e:
+                logger.warning(f"No se pudo invocar update.sh en el host ({e}), procediendo con actualización directa...")
 
-    # Si estamos en Docker (o fallback estándar), clonamos la última versión en /tmp
-    temp_dir = Path("/tmp/dashboard_update")
+    # Obtener el commit remoto más reciente desde GitHub API
+    latest_sha = "latest"
+    try:
+        req_sha = urllib.request.Request(
+            "https://api.github.com/repos/Dantenephilim/Dashboard/commits/main",
+            headers={"User-Agent": "Ubuntu-Dashboard-Monitor"}
+        )
+        with urllib.request.urlopen(req_sha, timeout=5) as r:
+            if r.status == 200:
+                data = json.loads(r.read().decode("utf-8"))
+                latest_sha = data.get("sha", "latest")[:7]
+    except Exception as e:
+        logger.warning(f"No se pudo consultar el último commit en GitHub API: {e}")
+
+    temp_dir = Path("/tmp/dashboard_zip_extract")
+    updated = False
+    error_details = []
+
+    # Método 1: Descarga directa del ZIP desde GitHub (100% nativo en Python, sin dependencias de git)
     try:
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info("Clonando repositorio https://github.com/Dantenephilim/Dashboard.git...")
-        clone_res = subprocess.run(
-            ["git", "clone", "--depth", "1", "https://github.com/Dantenephilim/Dashboard.git", str(temp_dir)],
-            capture_output=True,
-            text=True,
-            timeout=45
+        zip_url = "https://github.com/Dantenephilim/Dashboard/archive/refs/heads/main.zip"
+        logger.info(f"Descargando paquete de actualización desde {zip_url}...")
+        req_zip = urllib.request.Request(
+            zip_url,
+            headers={"User-Agent": "Ubuntu-Dashboard-Monitor"}
         )
+        with urllib.request.urlopen(req_zip, timeout=35) as resp:
+            if resp.status == 200:
+                zip_data = resp.read()
+                with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
+                    zf.extractall(temp_dir)
+                logger.info("Paquete ZIP extraído con éxito en directorio temporal.")
 
-        if clone_res.returncode != 0:
-            raise RuntimeError(f"Error de git clone: {clone_res.stderr.strip() or clone_res.stdout.strip()}")
+                # Ubicar la carpeta extraída (Dashboard-main)
+                extracted_root = None
+                for child in temp_dir.iterdir():
+                    if child.is_dir() and "Dashboard" in child.name:
+                        extracted_root = child
+                        break
+                if not extracted_root:
+                    extracted_root = temp_dir
 
-        latest_sha = "latest"
+                src_app = extracted_root / "app"
+                if src_app.exists():
+                    # Copiar estáticos (index.html, css, js)
+                    if (src_app / "static").exists():
+                        shutil.copytree(src_app / "static", BASE_DIR / "static", dirs_exist_ok=True)
+                        logger.info("Archivos estáticos (HTML/CSS/JS) actualizados con éxito.")
+
+                    # Copiar módulos Python
+                    for py_f in src_app.glob("*.py"):
+                        shutil.copy2(py_f, BASE_DIR / py_f.name)
+                        logger.info(f"Módulo Python '{py_f.name}' actualizado con éxito.")
+
+                    # Copiar update.sh si existe
+                    if (extracted_root / "update.sh").exists():
+                        try:
+                            shutil.copy2(extracted_root / "update.sh", BASE_DIR.parent / "update.sh")
+                        except Exception:
+                            pass
+
+                    updated = True
+            else:
+                error_details.append(f"Descarga ZIP respondió con HTTP {resp.status}")
+    except Exception as e:
+        logger.warning(f"Error descargando ZIP desde GitHub ({e}). Probando fallback con git clone...")
+        error_details.append(f"Fallo descarga ZIP: {e}")
+
+    # Método 2 (Fallback): Git clone si el método ZIP falló
+    if not updated:
         try:
-            out = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=str(temp_dir), timeout=5)
-            latest_sha = out.decode("utf-8").strip()
-        except Exception:
-            pass
+            clone_dir = Path("/tmp/dashboard_git_clone")
+            if clone_dir.exists():
+                shutil.rmtree(clone_dir, ignore_errors=True)
+            logger.info("Intentando git clone como método de respaldo...")
+            clone_res = subprocess.run(
+                ["git", "clone", "--depth", "1", "https://github.com/Dantenephilim/Dashboard.git", str(clone_dir)],
+                capture_output=True,
+                text=True,
+                timeout=45
+            )
+            if clone_res.returncode == 0:
+                src_app = clone_dir / "app"
+                if src_app.exists():
+                    if (src_app / "static").exists():
+                        shutil.copytree(src_app / "static", BASE_DIR / "static", dirs_exist_ok=True)
+                    for py_f in src_app.glob("*.py"):
+                        shutil.copy2(py_f, BASE_DIR / py_f.name)
+                    updated = True
+            else:
+                error_details.append(f"Git clone error: {clone_res.stderr.strip()}")
+            shutil.rmtree(clone_dir, ignore_errors=True)
+        except Exception as git_err:
+            error_details.append(f"Fallo git clone: {git_err}")
 
-        # Sincronizar archivos a BASE_DIR
-        src_app = temp_dir / "app"
-        if src_app.exists():
-            if (src_app / "static").exists():
-                shutil.copytree(src_app / "static", BASE_DIR / "static", dirs_exist_ok=True)
-                logger.info("Archivos estáticos actualizados con éxito.")
+    # Limpieza de temporales
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
-            for py_f in src_app.glob("*.py"):
-                shutil.copy2(py_f, BASE_DIR / py_f.name)
-                logger.info(f"Módulo Python '{py_f.name}' actualizado con éxito.")
+    if not updated:
+        return {
+            "status": "error",
+            "message": f"No se pudo descargar la actualización ({'; '.join(error_details)}). En tu terminal ejecuta: cd ~/Dashboard && sudo bash update.sh"
+        }
 
-        # Guardar archivo version.json
-        version_file = BASE_DIR / "version.json"
+    # Guardar version.json con el commit actualizado
+    from app import __version__
+    version_file = BASE_DIR / "version.json"
+    try:
         with open(version_file, "w", encoding="utf-8") as f:
             json.dump({
                 "commit": latest_sha,
                 "updated_at": datetime.now().isoformat(),
-                "version": "2.2.0"
+                "version": __version__
             }, f, indent=2)
-
-        # Limpiar directorio temporal
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-        logger.info(f"Actualización completada a {latest_sha}. Programando reinicio del contenedor...")
-
-        # Reinicio seguro en segundo plano para que Docker reinicie el contenedor automáticamente
-        def restart_worker():
-            time.sleep(1.5)
-            logger.info("Reiniciando proceso uvicorn...")
-            os._exit(0)
-
-        threading.Thread(target=restart_worker, daemon=True).start()
-
-        return {
-            "status": "ok",
-            "message": f"¡Actualizado exitosamente al commit {latest_sha}! El dashboard se reiniciará en 2 segundos."
-        }
-
     except Exception as e:
-        logger.error(f"Error actualizando contenedor: {e}", exc_info=True)
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir, ignore_errors=True)
-        return {
-            "status": "error",
-            "message": f"Error al actualizar desde GitHub: {str(e)}. Puedes ejecutar en tu terminal: cd ~/Dashboard && sudo bash update.sh"
-        }
+        logger.warning(f"No se pudo guardar {version_file}: {e}")
+
+    logger.info(f"Actualización completada a {latest_sha}. Programando reinicio del servidor...")
+
+    # Reinicio seguro en segundo plano para que Docker reinicie el contenedor automáticamente
+    def restart_worker():
+        time.sleep(1.5)
+        logger.info("Reiniciando proceso Uvicorn / Contenedor...")
+        os._exit(0)
+
+    threading.Thread(target=restart_worker, daemon=True).start()
+
+    return {
+        "status": "ok",
+        "commit": latest_sha,
+        "message": f"¡Actualizado exitosamente al commit {latest_sha}! El dashboard se reiniciará en 2 segundos."
+    }
 
 
 @app.post("/api/updates/apply")
@@ -389,7 +462,8 @@ async def api_apply_update():
     """Descarga los últimos cambios de GitHub y dispara la actualización del contenedor."""
     try:
         res = await asyncio.to_thread(trigger_system_update)
-        return res
+        status_code = 200 if res.get("status") == "ok" else 500
+        return JSONResponse(status_code=status_code, content=res)
     except Exception as e:
         logger.error(f"Error al aplicar actualización: {e}")
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})

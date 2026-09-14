@@ -511,11 +511,9 @@
 
           <!-- Category / Status Filters -->
           <div class="flex items-center gap-1 font-mono text-[10px]">
-            <button onclick="setFilter('all')" class="filter-btn active px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40" data-filter="all">Todos</button>
-            <button onclick="setFilter('docker')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="docker">🐳 Docker</button>
-            <button onclick="setFilter('host')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="host">🌐 Host</button>
-            <button onclick="setFilter('running')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="running">Activos</button>
-            <button onclick="setFilter('alert')" class="filter-btn px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Alertas</button>
+            <button onclick="setFilter('all')" class="filter-btn active px-2.5 py-0.5 rounded bg-slate-800 text-cyan-400 border border-cyan-500/40" data-filter="all">Todos</button>
+            <button onclick="setFilter('running')" class="filter-btn px-2.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="running">Activos</button>
+            <button onclick="setFilter('alert')" class="filter-btn px-2.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-white" data-filter="alert">Alertas</button>
           </div>
         </div>
 
@@ -1502,97 +1500,14 @@
 
       const host = window.location.hostname || 'localhost';
 
-      // 1. Construir lista de servicios nativos del host (Apache, Nessus, y puertos del host)
-      const hostServicesList = [];
-      const srv = (currentMetrics && currentMetrics.system_services) || {};
-
-      // Apache Host Service
-      if (srv.apache) {
-        const ap = srv.apache;
-        const apRunning = Boolean(ap.running || (ap.status && ap.status.toUpperCase() === 'LEVANTADO') || (ap.status && ap.status.toUpperCase() === 'RUNNING'));
-        hostServicesList.push({
-          id: 'host-apache',
-          name: ap.name || 'Apache HTTP Server',
-          image: ap.description || 'Apache Web Server (Ubuntu Host)',
-          is_host: true,
-          status: apRunning ? 'running' : 'stopped',
-          health: apRunning ? 'healthy' : '',
-          ports: [{
-            link_port: ap.port || 80,
-            internal: ap.port || 80,
-            protocol: ap.protocol || 'tcp'
-          }],
-          service_info: { icon: '🪶', label: 'Apache Web Server' },
-          cpu_percent: 0,
-          memory: { used_mb: 0 },
-          url: `http://${host}:${ap.port || 80}`
-        });
-      }
-
-      // Nessus Host Service
-      if (srv.nessus) {
-        const ns = srv.nessus;
-        const nsRunning = Boolean(ns.running || (ns.status && ns.status.toUpperCase() === 'LEVANTADO') || (ns.status && ns.status.toUpperCase() === 'RUNNING'));
-        hostServicesList.push({
-          id: 'host-nessus',
-          name: ns.name || 'Tenable Nessus Scanner',
-          image: ns.description || 'Nessus Vulnerability Scanner (Ubuntu Host)',
-          is_host: true,
-          status: nsRunning ? 'running' : 'stopped',
-          health: nsRunning ? 'healthy' : '',
-          ports: [{
-            link_port: ns.port || 8834,
-            internal: ns.port || 8834,
-            protocol: 'https'
-          }],
-          service_info: { icon: '🛡️', label: 'Tenable Nessus' },
-          cpu_percent: 0,
-          memory: { used_mb: 0 },
-          url: `https://${host}:${ns.port || 8834}`
-        });
-      }
-
-      // Otros puertos notables del host
-      const hostRaw = (currentMetrics && currentMetrics.host_services) || [];
-      hostRaw.forEach(h => {
-        if (![80, 443, 8090, 8834].includes(h.port)) {
-          hostServicesList.push({
-            id: `host-port-${h.port}`,
-            name: h.description || `Servicio Puerto ${h.port}`,
-            image: `Puerto ${h.port}/tcp • ${h.process || 'Host Service'}`,
-            is_host: true,
-            status: 'running',
-            health: 'healthy',
-            ports: [{
-              link_port: h.link_port || h.port,
-              internal: h.port,
-              protocol: 'tcp'
-            }],
-            service_info: { icon: h.icon || '🌐', label: h.category || 'Servicio Host' },
-            cpu_percent: 0,
-            memory: { used_mb: 0 },
-            url: `http://${host}:${h.link_port || h.port}`
-          });
-        }
-      });
-
-      // Filter selection
+      // 1. Filtrar y renderizar exclusivamente contenedores Docker
       const query = (document.getElementById('search-container').value || '').toLowerCase().trim();
       const dockerContainers = docker.containers || [];
       populateConsoleContainerSelect(dockerContainers);
-      let list = [];
-
-      if (currentFilter === 'docker') {
-        list = [...dockerContainers];
-      } else if (currentFilter === 'host') {
-        list = [...hostServicesList];
-      } else {
-        // 'all', 'running', 'alert'
-        list = [...hostServicesList, ...dockerContainers];
-      }
+      let list = [...dockerContainers];
 
       if (currentFilter === 'running') {
-        list = list.filter(c => (c.status || '').toLowerCase() === 'running' || (c.status || '').toUpperCase() === 'LEVANTADO');
+        list = list.filter(c => (c.status || '').toLowerCase() === 'running');
       } else if (currentFilter === 'alert') {
         list = list.filter(c => (c.health || '').toLowerCase() === 'unhealthy' || (c.status || '').toLowerCase() === 'restarting' || (c.status || '').toLowerCase() === 'exited' || (c.status || '').toLowerCase() === 'stopped');
       }
@@ -1601,27 +1516,25 @@
         list = list.filter(c => 
           (c.name || '').toLowerCase().includes(query) ||
           (c.image || '').toLowerCase().includes(query) ||
-          (c.ports || []).some(p => String(p.link_port || p.internal || p.display || '').toLowerCase().includes(query))
+          (c.ports || []).some(p => String(p.link_port || p.internal || p.external || p.display || '').toLowerCase().includes(query))
         );
       }
 
-      const runningDocker = docker.running || 0;
-      const runningHost = hostServicesList.filter(h => h.status === 'running').length;
-      countBadge.textContent = `${runningDocker} Docker • ${runningHost} Host Activos`;
+      const runningDocker = docker.running !== undefined ? docker.running : dockerContainers.filter(c => (c.status || '').toLowerCase() === 'running').length;
+      countBadge.textContent = `${runningDocker} / ${dockerContainers.length} Contenedores Activos`;
 
       if (list.length === 0) {
-        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay servicios o contenedores que coincidan con el filtro.</div>';
+        containerListEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-mono">No hay contenedores Docker que coincidan con el filtro.</div>';
         lastContainerFingerprint = '';
         return;
       }
 
-      // Compute fingerprint to avoid unnecessary full DOM rebuilds
+      // Fingerprint para evitar reconstrucciones innecesarias del DOM
       const currentFingerprint = `${currentFilter}:${query}:` + list.map(c => `${c.id}:${c.status}:${c.health}:${c.ports ? c.ports.map(p=>p.link_port||p.internal).join(',') : ''}`).join('|');
 
       if (currentFingerprint === lastContainerFingerprint && containerListEl.children.length === list.length) {
-        // In-place metric update: preserves running CSS animations smoothly at 60 FPS
+        // Actualización in-place para animaciones a 60 FPS
         list.forEach(c => {
-          if (c.is_host) return; // Host services don't have container stats
           const isRunning = (c.status || '').toLowerCase() === 'running';
           const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
           const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
@@ -1664,13 +1577,7 @@
 
         // Status pill
         let statusBadge = '';
-        if (c.is_host) {
-          if (isRunning) {
-            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black font-mono bg-emerald-500 text-slate-950 tracking-wide shadow-[0_0_8px_rgba(16,185,129,0.4)]">LEVANTADO</span>`;
-          } else {
-            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black font-mono bg-rose-600 text-white tracking-wide shadow-[0_0_8px_rgba(244,63,94,0.3)]">CAÍDO</span>`;
-          }
-        } else if (isRunning) {
+        if (isRunning) {
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-600 text-white tracking-wide shadow-[0_0_8px_rgba(16,185,129,0.3)]">RUNNING</span>`;
         } else if (isRestarting) {
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-amber-600 text-white tracking-wide animate-pulse">RESTART</span>`;
@@ -1678,19 +1585,15 @@
           statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-700 text-white tracking-wide">STOPPED</span>`;
         }
 
-        // Health / Source Tag
+        // Health Tag
         let healthTag = '';
-        if (c.is_host) {
-          healthTag = `<span class="text-[9px] text-cyan-400 font-mono font-semibold">UBUNTU HOST</span>`;
+        const health = (c.health || '').toLowerCase();
+        if (health === 'healthy') {
+          healthTag = `<span class="text-[9px] text-emerald-400 font-mono">● Saludable</span>`;
+        } else if (health === 'unhealthy') {
+          healthTag = `<span class="text-[9px] text-rose-400 font-mono font-bold animate-pulse">⚠ UNHEALTHY</span>`;
         } else {
-          const health = (c.health || '').toLowerCase();
-          if (health === 'healthy') {
-            healthTag = `<span class="text-[9px] text-emerald-400 font-mono">● Saludable</span>`;
-          } else if (health === 'unhealthy') {
-            healthTag = `<span class="text-[9px] text-rose-400 font-mono font-bold animate-pulse">⚠ UNHEALTHY</span>`;
-          } else {
-            healthTag = `<span class="text-[9px] text-slate-500 font-mono">DOCKER</span>`;
-          }
+          healthTag = `<span class="text-[9px] text-slate-500 font-mono">DOCKER</span>`;
         }
 
         // Service categorization & deduplicated ports
@@ -1699,279 +1602,178 @@
         const portsHtml = formatContainerPortsHtml(c, host, cleanPorts);
         const isOpen = openDrawers.has(c.id);
 
-        if (c.is_host) {
-          // Row for Native Host Service
-          rowsHtml += `
-            <div class="container-entry bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/50 transition mb-1 overflow-hidden shadow-sm" id="container-card-${c.id}">
+        const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
+        const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
+        const waveSvg = generateLiveSparklineSvg(c.id, isRunning, Number(cpuVal));
+
+        rowsHtml += `
+          <div class="container-entry bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/50 transition mb-1 overflow-hidden shadow-sm" id="container-card-${c.id}">
+            
+            <!-- Compact Uniform Main Row: Strictly 48px / h-12 -->
+            <div class="grid grid-cols-12 gap-2 items-center px-2.5 h-12 min-h-[48px] max-h-[48px] cursor-pointer select-none overflow-hidden" onclick="toggleContainerDrawer('${c.id}', event)" title="Haz clic para ver o colapsar detalles">
               
-              <!-- Compact Uniform Main Row: Strictly 48px / h-12 -->
-              <div class="grid grid-cols-12 gap-2 items-center px-2.5 h-12 min-h-[48px] max-h-[48px] cursor-pointer select-none overflow-hidden" onclick="toggleContainerDrawer('${c.id}', event)" title="Haz clic para ver o colapsar detalles">
-                
-                <!-- Col 1: Icon & Name (5 cols) -->
-                <div class="col-span-5 flex items-center gap-2 overflow-hidden">
-                  <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🌐'}</span>
-                  <div class="flex flex-col truncate min-w-0">
-                    <div class="flex items-center gap-1.5">
-                      <span class="font-bold text-slate-100 truncate text-[11px] hover:text-cyan-400 transition" title="${c.name}">${c.name}</span>
-                      <span class="px-1 py-0.2 rounded bg-cyan-950 text-cyan-300 text-[8px] font-mono border border-cyan-800 flex-shrink-0">HOST</span>
-                    </div>
-                    <span class="text-[9px] font-mono text-slate-500 truncate" title="${c.image}">${c.image}</span>
-                  </div>
+              <!-- Col 1: Icon & Name (5 cols) -->
+              <div class="col-span-5 flex items-center gap-2 overflow-hidden">
+                <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🐳'}</span>
+                <div class="flex flex-col truncate min-w-0">
+                  <span class="font-bold text-slate-100 truncate text-[11px] hover:text-cyan-400 transition cursor-pointer" onclick="viewContainerLogs('${c.id}', '${c.name}'); event.stopPropagation();" title="${c.name}">${c.name}</span>
+                  <span class="text-[9px] font-mono text-slate-500 truncate" title="${c.image}">${c.image}</span>
+                </div>
+              </div>
+
+              <!-- Col 2: Status & Health (2 cols) -->
+              <div class="col-span-2 flex flex-col items-center justify-center gap-0.5 overflow-hidden">
+                ${statusBadge}
+                ${healthTag}
+              </div>
+
+              <!-- Col 3: Ports (2 cols) -->
+              <div class="col-span-2 flex items-center justify-center gap-1 overflow-hidden whitespace-nowrap">
+                ${portsHtml}
+              </div>
+
+              <!-- Col 4: Metrics, Sparkline, Logs & Chevron (3 cols) -->
+              <div class="col-span-3 flex items-center justify-end gap-1.5 font-mono text-[10px] overflow-hidden">
+                <div class="flex flex-col text-right leading-tight min-w-[55px]">
+                  <span class="text-slate-300 text-[10px]">CPU: <b class="text-cyan-400" id="cpu-val-${c.id}">${cpuVal}%</b></span>
+                  <span class="text-slate-400 text-[9px]" id="mem-val-${c.id}">MEM: ${memMb}M</span>
                 </div>
 
-                <!-- Col 2: Status & Source (2 cols) -->
-                <div class="col-span-2 flex flex-col items-center justify-center gap-0.5 overflow-hidden">
-                  ${statusBadge}
-                  ${healthTag}
+                <!-- Sparkline Live Wave -->
+                <div class="hidden md:block flex-shrink-0">
+                  ${waveSvg}
                 </div>
 
-                <!-- Col 3: Ports (2 cols) -->
-                <div class="col-span-2 flex items-center justify-center gap-1 overflow-hidden whitespace-nowrap">
-                  ${portsHtml}
-                </div>
-
-                <!-- Col 4: Action & Chevron (3 cols) -->
-                <div class="col-span-3 flex items-center justify-end gap-2 font-mono text-[10px] overflow-hidden">
-                  <span class="text-slate-400 hidden sm:inline text-[10px]">Servicio Host</span>
+                <!-- Actions Group (Start / Stop / Restart / Logs) -->
+                <div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
                   ${isRunning ? `
-                    <a href="${c.url || '#'}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/70 hover:bg-cyan-900 text-cyan-300 hover:text-white text-[9px] font-bold uppercase transition flex items-center gap-0.5 shadow-sm">
-                      Abrir ↗
-                    </a>
+                    <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
+                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}')" title="Apagar / Detener contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-400 transition" aria-label="Detener">
+                      <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
+                    </button>
                   ` : `
-                    <span class="text-slate-500 text-[9px] font-mono">Inactivo</span>
+                    <button onclick="performContainerAction('${c.id}', 'start', '${c.name}')" title="Iniciar contenedor" class="p-1 rounded bg-emerald-950 border border-emerald-600 hover:border-emerald-400 text-emerald-300 hover:text-white transition" aria-label="Iniciar">
+                      <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                    <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
+                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
                   `}
-                  <!-- Drawer Chevron -->
-                  <button type="button" class="p-1 text-slate-400 hover:text-cyan-400 transition-transform ${isOpen ? 'rotate-180' : ''}" id="drawer-chevron-${c.id}" title="Desplegar información extra">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+
+                  <!-- LOGS button -->
+                  <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
+                    LOGS
                   </button>
                 </div>
 
+                <!-- Expand/Collapse Drawer Chevron -->
+                <button type="button" class="p-1 text-slate-400 hover:text-cyan-400 transition-transform ${isOpen ? 'rotate-180' : ''}" id="drawer-chevron-${c.id}" title="Desplegar información extra">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
               </div>
 
-              <!-- Collapsible Details Drawer -->
-              <div id="container-drawer-${c.id}" class="${isOpen ? 'block' : 'hidden'} border-t border-slate-800/90 bg-[#060a13] p-3 text-[11px] font-mono transition-all">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div class="flex flex-col gap-1.5 bg-[#090e19] border border-slate-800/80 rounded p-2.5">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[10px]">
-                      <span>🌐 DETALLES DEL SERVICIO HOST</span>
-                      <span class="text-cyan-400 text-[9px]">UBUNTU LINUX</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">Nombre:</span>
-                      <span class="text-slate-200 font-bold">${c.name}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">Descripción:</span>
-                      <span class="text-slate-300 truncate max-w-[220px]">${c.image}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">Estado:</span>
-                      <span class="${isRunning ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}">${isRunning ? 'En Ejecución (Levantado)' : 'Inactivo / Detenido (Caído)'}</span>
-                    </div>
-                  </div>
+            </div>
 
-                  <div class="flex flex-col gap-1.5 bg-[#090e19] border border-slate-800/80 rounded p-2.5">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[10px]">
-                      <span>🔌 PUERTOS VINCULADOS</span>
-                      <span class="text-slate-500 text-[9px]">TCP</span>
+            <!-- Collapsible Details Drawer -->
+            <div id="container-drawer-${c.id}" class="${isOpen ? 'block' : 'hidden'} border-t border-slate-800/90 bg-[#060a13] p-3 text-[11px] font-mono transition-all">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                
+                <!-- Box 1: Runtime Information -->
+                <div class="flex flex-col gap-1.5 bg-[#090e19] border border-slate-800/80 rounded p-2.5">
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[10px]">
+                    <span class="flex items-center gap-1"><span>📦</span> INFORMACIÓN DETALLADA</span>
+                    <span class="text-cyan-400 font-mono text-[9px]">DOCKER ENGINE</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400">ID Contenedor:</span>
+                    <span class="text-slate-200 select-all font-mono" title="${c.id}">${String(c.id).substring(0, 16)}${String(c.id).length > 16 ? '...' : ''}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400">Imagen Completa:</span>
+                    <span class="text-cyan-300 truncate max-w-[220px]" title="${c.image}">${c.image}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400">Estado de Salud:</span>
+                    <span class="${c.health === 'healthy' ? 'text-emerald-400 font-bold' : (c.health === 'unhealthy' ? 'text-rose-400 font-bold' : 'text-slate-300')}">
+                      ${c.health || (isRunning ? 'Activo (Healthy)' : 'Inactivo / Detenido')}
+                    </span>
+                  </div>
+                  ${c.ip_address ? `
+                    <div class="flex items-center justify-between text-[10px]">
+                      <span class="text-slate-400">IP de Red Docker:</span>
+                      <span class="text-slate-200 font-mono">${c.ip_address}</span>
                     </div>
-                    <div class="flex flex-col gap-1">
+                  ` : ''}
+                  <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400">Consumo CPU / MEM:</span>
+                    <span class="text-slate-200 font-mono"><b class="text-cyan-400">${cpuVal}%</b> • <b class="text-emerald-400">${memMb} MB</b></span>
+                  </div>
+                </div>
+
+                <!-- Box 2: All Ports Matrix -->
+                <div class="flex flex-col gap-1.5 bg-[#090e19] border border-slate-800/80 rounded p-2.5">
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[10px]">
+                    <span class="flex items-center gap-1"><span>🔌</span> MAPEO COMPLETO DE PUERTOS (${cleanPorts.length})</span>
+                    <span class="text-slate-500 text-[9px]">TCP / UDP</span>
+                  </div>
+                  ${(cleanPorts && cleanPorts.length > 0) ? `
+                    <div class="max-h-36 overflow-y-auto flex flex-col gap-1 pr-1">
                       ${cleanPorts.map(p => {
                         const pNum = p.link_port || p.external || p.internal;
-                        const isHttps = (p.protocol === 'https' || pNum == 8834 || pNum == 443);
-                        const proto = isHttps ? 'https' : 'http';
+                        const isWeb = [80, 443, 8834, 9000, 8443, 8080, 3000, 5601, 5678, 8000, 8090, 11434, 9443, 5000].includes(Number(pNum)) || (p.protocol === 'https');
+                        const proto = (p.protocol === 'https' || pNum == 8834 || pNum == 443) ? 'https' : 'http';
                         const url = `${proto}://${host}:${pNum}`;
                         return `
                           <div class="flex items-center justify-between py-1 px-1.5 rounded bg-slate-900/80 border border-slate-800 text-[10px]">
-                            <span class="text-slate-300 font-mono">Puerto ${pNum} / ${p.protocol || 'TCP'}</span>
-                            <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white font-bold text-[9px] transition">
-                              Abrir Web ↗
-                            </a>
+                            <div class="flex items-center gap-1.5 truncate">
+                              <span class="w-1.5 h-1.5 rounded-full ${isWeb ? 'bg-cyan-400' : 'bg-slate-500'}"></span>
+                              <span class="text-slate-300 font-mono">${p.display || (p.external ? `${p.external} ➔ ${p.internal}/${p.protocol || 'tcp'}` : `${p.internal}/${p.protocol || 'tcp'}`)}</span>
+                            </div>
+                            ${pNum ? `
+                              <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white font-bold text-[9px] transition flex items-center gap-0.5">
+                                Abrir ↗
+                              </a>
+                            ` : ''}
                           </div>
                         `;
                       }).join('')}
                     </div>
-                  </div>
+                  ` : `
+                    <div class="text-slate-500 text-[10px] italic py-3 text-center">No hay puertos de red expuestos</div>
+                  `}
                 </div>
+
               </div>
 
-            </div>
-          `;
-        } else {
-          // Row for Docker Container
-          const cpuVal = Number(c.cpu_percent || 0).toFixed(1);
-          const memMb = c.memory ? Number(c.memory.used_mb || 0).toFixed(0) : 0;
-          const waveSvg = generateLiveSparklineSvg(c.id, isRunning, Number(cpuVal));
-
-          rowsHtml += `
-            <div class="container-entry bg-[#0a0f19]/90 border border-slate-800/80 rounded-md hover:border-cyan-500/50 transition mb-1 overflow-hidden shadow-sm" id="container-card-${c.id}">
-              
-              <!-- Compact Uniform Main Row: Strictly 48px / h-12 -->
-              <div class="grid grid-cols-12 gap-2 items-center px-2.5 h-12 min-h-[48px] max-h-[48px] cursor-pointer select-none overflow-hidden" onclick="toggleContainerDrawer('${c.id}', event)" title="Haz clic para ver o colapsar detalles">
-                
-                <!-- Col 1: Icon & Name (5 cols) -->
-                <div class="col-span-5 flex items-center gap-2 overflow-hidden">
-                  <span class="text-base flex-shrink-0" title="${sInfo.label}">${sInfo.icon || '🐳'}</span>
-                  <div class="flex flex-col truncate min-w-0">
-                    <span class="font-bold text-slate-100 truncate text-[11px] hover:text-cyan-400 transition cursor-pointer" onclick="viewContainerLogs('${c.id}', '${c.name}'); event.stopPropagation();" title="${c.name}">${c.name}</span>
-                    <span class="text-[9px] font-mono text-slate-500 truncate" title="${c.image}">${c.image}</span>
-                  </div>
-                </div>
-
-                <!-- Col 2: Status & Health (2 cols) -->
-                <div class="col-span-2 flex flex-col items-center justify-center gap-0.5 overflow-hidden">
-                  ${statusBadge}
-                  ${healthTag}
-                </div>
-
-                <!-- Col 3: Ports (2 cols) -->
-                <div class="col-span-2 flex items-center justify-center gap-1 overflow-hidden whitespace-nowrap">
-                  ${portsHtml}
-                </div>
-
-                <!-- Col 4: Metrics, Sparkline, Logs & Chevron (3 cols) -->
-                <div class="col-span-3 flex items-center justify-end gap-1.5 font-mono text-[10px] overflow-hidden">
-                  <div class="flex flex-col text-right leading-tight min-w-[55px]">
-                    <span class="text-slate-300 text-[10px]">CPU: <b class="text-cyan-400" id="cpu-val-${c.id}">${cpuVal}%</b></span>
-                    <span class="text-slate-400 text-[9px]" id="mem-val-${c.id}">MEM: ${memMb}M</span>
-                  </div>
-
-                  <!-- Sparkline Live Wave -->
-                  <div class="hidden md:block flex-shrink-0">
-                    ${waveSvg}
-                  </div>
-
-                  <!-- Actions Group (Start / Stop / Restart / Logs) -->
-                  <div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
-                    ${isRunning ? `
-                      <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
-                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      </button>
-                      <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}')" title="Apagar / Detener contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-400 transition" aria-label="Detener">
-                        <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" rx="2"/></svg>
-                      </button>
-                    ` : `
-                      <button onclick="performContainerAction('${c.id}', 'start', '${c.name}')" title="Iniciar contenedor" class="p-1 rounded bg-emerald-950 border border-emerald-600 hover:border-emerald-400 text-emerald-300 hover:text-white transition" aria-label="Iniciar">
-                        <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                      </button>
-                      <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}')" title="Reiniciar contenedor" class="p-1 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-400 transition" aria-label="Reiniciar">
-                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      </button>
-                    `}
-
-                    <!-- LOGS button -->
-                    <button onclick="viewContainerLogs('${c.id}', '${c.name}')" title="Ver logs en tiempo real" class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 text-[9px] font-bold uppercase transition flex items-center gap-0.5">
-                      LOGS
-                    </button>
-                  </div>
-
-                  <!-- Expand/Collapse Drawer Chevron -->
-                  <button type="button" class="p-1 text-slate-400 hover:text-cyan-400 transition-transform ${isOpen ? 'rotate-180' : ''}" id="drawer-chevron-${c.id}" title="Desplegar información extra">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <!-- Actions Toolbar inside drawer -->
+              <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-800/80">
+                <span class="text-slate-500 text-[9px]">Acciones para ${c.name}</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="viewContainerLogs('${c.id}', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[10px] font-bold transition flex items-center gap-1">
+                    <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Ver Logs Consola
                   </button>
-                </div>
-
-              </div>
-
-              <!-- Collapsible Details Drawer -->
-              <div id="container-drawer-${c.id}" class="${isOpen ? 'block' : 'hidden'} border-t border-slate-800/90 bg-[#060a13] p-3 text-[11px] font-mono transition-all">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  
-                  <!-- Box 1: Runtime Information -->
-                  <div class="flex flex-col gap-1.5 bg-[#090e19] border border-slate-800/80 rounded p-2.5">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[10px]">
-                      <span class="flex items-center gap-1"><span>📦</span> INFORMACIÓN DETALLADA</span>
-                      <span class="text-cyan-400 font-mono text-[9px]">DOCKER ENGINE</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">ID Contenedor:</span>
-                      <span class="text-slate-200 select-all font-mono" title="${c.id}">${String(c.id).substring(0, 16)}${String(c.id).length > 16 ? '...' : ''}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">Imagen Completa:</span>
-                      <span class="text-cyan-300 truncate max-w-[220px]" title="${c.image}">${c.image}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">Estado de Salud:</span>
-                      <span class="${c.health === 'healthy' ? 'text-emerald-400 font-bold' : (c.health === 'unhealthy' ? 'text-rose-400 font-bold' : 'text-slate-300')}">
-                        ${c.health || (isRunning ? 'Activo (Healthy)' : 'Inactivo / Detenido')}
-                      </span>
-                    </div>
-                    ${c.ip_address ? `
-                      <div class="flex items-center justify-between text-[10px]">
-                        <span class="text-slate-400">IP de Red Docker:</span>
-                        <span class="text-slate-200 font-mono">${c.ip_address}</span>
-                      </div>
-                    ` : ''}
-                    <div class="flex items-center justify-between text-[10px]">
-                      <span class="text-slate-400">Consumo CPU / MEM:</span>
-                      <span class="text-slate-200 font-mono"><b class="text-cyan-400">${cpuVal}%</b> • <b class="text-emerald-400">${memMb} MB</b></span>
-                    </div>
-                  </div>
-
-                  <!-- Box 2: All Ports Matrix -->
-                  <div class="flex flex-col gap-1.5 bg-[#090e19] border border-slate-800/80 rounded p-2.5">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-300 font-bold text-[10px]">
-                      <span class="flex items-center gap-1"><span>🔌</span> MAPEO COMPLETO DE PUERTOS (${(c.ports || []).length})</span>
-                      <span class="text-slate-500 text-[9px]">TCP / UDP</span>
-                    </div>
-                    ${(c.ports && c.ports.length > 0) ? `
-                      <div class="max-h-32 overflow-y-auto flex flex-col gap-1 pr-1">
-                        ${c.ports.map(p => {
-                          const pNum = p.link_port || p.external || p.internal;
-                          const isWeb = [80, 443, 8834, 9000, 8443, 8080, 3000, 5601, 5678, 8000, 8090, 11434, 9443, 5000].includes(Number(pNum)) || (p.protocol === 'https');
-                          const proto = (p.protocol === 'https' || pNum == 8834 || pNum == 443) ? 'https' : 'http';
-                          const url = `${proto}://${host}:${pNum}`;
-                          return `
-                            <div class="flex items-center justify-between py-1 px-1.5 rounded bg-slate-900/80 border border-slate-800 text-[10px]">
-                              <div class="flex items-center gap-1.5 truncate">
-                                <span class="w-1.5 h-1.5 rounded-full ${isWeb ? 'bg-cyan-400' : 'bg-slate-500'}"></span>
-                                <span class="text-slate-300 font-mono">${p.display || (p.external ? `${p.external} ➔ ${p.internal}/${p.protocol || 'tcp'}` : `${p.internal}/${p.protocol || 'tcp'}`)}</span>
-                              </div>
-                              ${pNum ? `
-                                <a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 hover:text-white font-bold text-[9px] transition flex items-center gap-0.5">
-                                  Abrir ↗
-                                </a>
-                              ` : ''}
-                            </div>
-                          `;
-                        }).join('')}
-                      </div>
-                    ` : `
-                      <div class="text-slate-500 text-[10px] italic py-3 text-center">No hay puertos de red expuestos</div>
-                    `}
-                  </div>
-
-                </div>
-
-                <!-- Actions Toolbar inside drawer -->
-                <div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-800/80">
-                  <span class="text-slate-500 text-[9px]">Acciones para ${c.name}</span>
-                  <div class="flex items-center gap-1.5">
-                    <button onclick="viewContainerLogs('${c.id}', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[10px] font-bold transition flex items-center gap-1">
-                      <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                      Ver Logs Consola
+                  <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-amber-950/80 border border-amber-500/70 hover:bg-amber-900 text-amber-300 text-[10px] font-bold transition">
+                    Reiniciar
+                  </button>
+                  ${isRunning ? `
+                    <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-rose-950/80 border border-rose-500/70 hover:bg-rose-900 text-rose-300 text-[10px] font-bold transition">
+                      Detener
                     </button>
-                    <button onclick="performContainerAction('${c.id}', 'restart', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-amber-950/80 border border-amber-500/70 hover:bg-amber-900 text-amber-300 text-[10px] font-bold transition">
-                      Reiniciar
+                  ` : `
+                    <button onclick="performContainerAction('${c.id}', 'start', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-emerald-950/80 border border-emerald-500/70 hover:bg-emerald-900 text-emerald-300 text-[10px] font-bold transition">
+                      Iniciar
                     </button>
-                    ${isRunning ? `
-                      <button onclick="performContainerAction('${c.id}', 'stop', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-rose-950/80 border border-rose-500/70 hover:bg-rose-900 text-rose-300 text-[10px] font-bold transition">
-                        Detener
-                      </button>
-                    ` : `
-                      <button onclick="performContainerAction('${c.id}', 'start', '${c.name}'); event.stopPropagation();" class="px-2 py-1 rounded bg-emerald-950/80 border border-emerald-500/70 hover:bg-emerald-900 text-emerald-300 text-[10px] font-bold transition">
-                        Iniciar
-                      </button>
-                    `}
-                  </div>
+                  `}
                 </div>
-
               </div>
 
             </div>
-          `;
-        }
+
+          </div>
+        `;
       });
 
       containerListEl.innerHTML = rowsHtml;
@@ -2220,21 +2022,46 @@
         btn.disabled = true;
         btn.classList.add('opacity-60', 'cursor-not-allowed');
       }
-      if (text) text.textContent = 'Iniciando actualización...';
+      if (text) text.textContent = 'Descargando actualización...';
       if (box) box.classList.remove('hidden');
+      if (bar) {
+        bar.style.width = '20%';
+        bar.className = 'bg-cyan-400 h-full transition-all duration-1000';
+      }
+      if (countdown) countdown.textContent = '10s';
+      if (msg) msg.textContent = 'Conectando con GitHub y descargando última versión...';
 
       try {
         const res = await fetch('/api/updates/apply', { method: 'POST' });
         const data = await res.json();
 
-        let timeLeft = 18;
-        if (bar) bar.style.width = '25%';
-        if (msg) msg.textContent = data.message || 'Descargando cambios y reconstruyendo contenedor...';
+        if (!res.ok || data.status === 'error') {
+          const errText = data.message || `Error del servidor (código HTTP ${res.status})`;
+          if (msg) msg.textContent = `❌ ${errText}`;
+          if (countdown) countdown.textContent = 'Fallo';
+          if (bar) {
+            bar.style.width = '100%';
+            bar.className = 'bg-rose-500 h-full transition-all';
+          }
+          showToast(`Error al actualizar: ${errText}`, 'error');
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-60', 'cursor-not-allowed');
+          }
+          if (text) text.textContent = 'Reintentar actualización 🚀';
+          return;
+        }
 
+        // Actualización iniciada y descargada con éxito
+        if (bar) bar.style.width = '55%';
+        if (msg) msg.textContent = data.message || 'Archivos sincronizados. Reiniciando servidor...';
+        showToast('✓ Actualización aplicada. Reiniciando servidor...', 'success');
+
+        let timeLeft = 10;
         const timer = setInterval(() => {
           timeLeft--;
           if (countdown) countdown.textContent = `${timeLeft}s`;
-          const pct = Math.min(95, 25 + ((18 - timeLeft) / 18) * 70);
+          const pct = Math.min(96, 55 + ((10 - timeLeft) / 10) * 40);
           if (bar) bar.style.width = `${pct}%`;
 
           if (timeLeft <= 0) {
@@ -2243,12 +2070,18 @@
             if (bar) bar.style.width = '100%';
             setTimeout(() => {
               window.location.reload();
-            }, 1500);
+            }, 1200);
           }
         }, 1000);
 
       } catch (err) {
-        if (msg) msg.textContent = `Error al actualizar: ${err.message}. Puedes usar el comando manual.`;
+        if (msg) msg.textContent = `❌ Error de red: ${err.message}. En terminal: cd ~/Dashboard && sudo bash update.sh`;
+        if (countdown) countdown.textContent = 'Fallo';
+        if (bar) {
+          bar.style.width = '100%';
+          bar.className = 'bg-rose-500 h-full transition-all';
+        }
+        showToast(`Fallo de conexión al actualizar: ${err.message}`, 'error');
         if (btn) {
           btn.disabled = false;
           btn.classList.remove('opacity-60', 'cursor-not-allowed');
