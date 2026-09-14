@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UBUNTU SERVER PRO | GLOBAL OPERATIONAL VIEW v2.0</title>
+  <title>UBUNTU SERVER PRO | GLOBAL OPERATIONAL VIEW v2.3.0</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='14' x='2' y='3' rx='2'/><line x1='8' x2='16' y1='21' y2='21'/><line x1='12' x2='12' y1='17' y2='21'/></svg>">
 
   <!-- Tailwind CSS CDN -->
@@ -146,7 +146,7 @@
         <div class="metallic-badge px-3 py-1.5 rounded-md flex items-center gap-2">
           <span class="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] pulse-dot"></span>
           <h1 class="text-xs md:text-sm font-bold tracking-wider text-slate-100 uppercase font-mono">
-            UBUNTU SERVER PRO | GLOBAL OPERATIONAL VIEW <span class="text-cyan-400">v2.0</span>
+            UBUNTU SERVER PRO | GLOBAL OPERATIONAL VIEW <span class="text-cyan-400">v2.3.0</span>
           </h1>
         </div>
 
@@ -191,7 +191,7 @@
         <!-- Updates / Sync Button -->
         <button onclick="openUpdateModal()" title="Comprobar actualizaciones en GitHub" class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 font-mono text-[11px] transition">
           <span id="update-indicator" class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-          <span id="btn-update-label">v2.0 Sync</span>
+          <span id="btn-update-label">v2.3.0 Sync</span>
         </button>
 
         <!-- GitHub Direct Link Button -->
@@ -2369,7 +2369,7 @@
         } else {
           elStatus.textContent = 'Sistema 100% al día';
           elStatus.className = 'text-emerald-400 font-bold';
-          labelBtn.textContent = 'v2.0 Sync';
+          labelBtn.textContent = 'v2.3.0 Sync';
           dot.className = 'h-1.5 w-1.5 rounded-full bg-emerald-400';
         }
       } catch (e) {
