@@ -69,9 +69,9 @@ async def broadcast_metrics(payload: dict):
 
 
 async def metrics_collector_loop():
-    """Bucle en segundo plano que recolecta métricas cada 1 segundo (ultra tiempo real sin delay)."""
+    """Bucle en segundo plano que recolecta métricas en ultra tiempo real (500ms) sin retrasos."""
     global latest_metrics
-    logger.info("Iniciando bucle de recolección de métricas cada 1s...")
+    logger.info("Iniciando bucle de recolección de métricas en ultra tiempo real (cada 500ms)...")
     
     while True:
         try:
@@ -99,7 +99,7 @@ async def metrics_collector_loop():
         except Exception as e:
             logger.error(f"Error en metrics_collector_loop: {e}", exc_info=True)
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
 
 
 @app.on_event("startup")

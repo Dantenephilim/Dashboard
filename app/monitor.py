@@ -1162,7 +1162,7 @@ def get_docker_metrics() -> dict:
                     for c in running_containers_to_stat
                 }
                 try:
-                    for future in as_completed(future_to_id, timeout=1.2):
+                    for future in as_completed(future_to_id, timeout=0.35):
                         cid = future_to_id[future]
                         try:
                             res = future.result()
