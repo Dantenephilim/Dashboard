@@ -26,7 +26,7 @@ git fetch origin main
 git reset --hard origin/main
 
 echo -e "${BLUE}[2/4] Reconstruyendo imagen optimizada y levantando contenedor...${NC}"
-docker compose up -d --build
+docker compose up -d --build --force-recreate
 
 echo -e "${BLUE}[3/4] Limpiando capas intermedias...${NC}"
 docker image prune -f 2>/dev/null || true
